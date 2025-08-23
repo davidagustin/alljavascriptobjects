@@ -6,6 +6,9 @@ export default function ObjectPageComponent() {
       title="Object"
       description="The base object from which all JavaScript objects inherit, providing fundamental object manipulation methods"
       overview="The Object constructor creates Object objects. Objects are collections of properties and are the fundamental building blocks of JavaScript. The Object constructor provides numerous static methods for object manipulation, property management, and prototype handling."
+      complexity="intermediate"
+      relatedObjects={['Array', 'Map', 'Set', 'WeakMap', 'Function']}
+      browserSupport="Object is supported in all JavaScript environments and browsers."
       syntax={`// === CREATING OBJECTS ===
 // Object literal (preferred)
 const obj1 = { name: 'John', age: 30 };
@@ -310,6 +313,57 @@ console.log(data.user?.settings?.theme); // undefined (no error)`}
         "Object cloning and merging",
         "Immutable object patterns",
         "Metadata and symbol properties"
+      ]}
+      examples={[
+        {
+          title: "Creating and Manipulating Objects",
+          description: "Basic object creation and property manipulation",
+          code: `// Creating objects
+const person = { name: 'Alice', age: 30 };
+const car = new Object();
+car.brand = 'Toyota';
+car.year = 2023;
+
+console.log(person.name); // 'Alice'
+console.log(Object.keys(car)); // ['brand', 'year']`
+        },
+        {
+          title: "Object Inheritance with Prototype",
+          description: "Using Object.create for prototype-based inheritance",
+          code: `// Prototype-based inheritance
+const animal = {
+  speak() {
+    console.log(this.name + ' makes a sound');
+  }
+};
+
+const dog = Object.create(animal);
+dog.name = 'Rex';
+dog.breed = 'Labrador';
+dog.speak(); // 'Rex makes a sound'
+
+console.log(Object.getPrototypeOf(dog) === animal); // true`
+        },
+        {
+          title: "Advanced Object Operations",
+          description: "Property descriptors and object manipulation",
+          code: `const obj = {};
+
+// Define property with descriptor
+Object.defineProperty(obj, 'secret', {
+  value: 'hidden',
+  writable: false,
+  enumerable: false,
+  configurable: false
+});
+
+console.log(obj.secret); // 'hidden'
+console.log(Object.keys(obj)); // []
+
+// Get property descriptor
+const descriptor = Object.getOwnPropertyDescriptor(obj, 'secret');
+console.log(descriptor.writable); // false`
+        }
       ]}
     />
   )

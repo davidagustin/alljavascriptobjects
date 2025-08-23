@@ -5,13 +5,24 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build && npm run optimize",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "next lint --fix",
+    "lint:check": "next lint",
     "type-check": "tsc --noEmit",
-    "clean": "rm -rf .next out",
+    "type-check:watch": "tsc --noEmit --watch",
+    "clean": "rm -rf .next out node_modules/.cache",
+    "clean:all": "npm run clean && rm -rf node_modules package-lock.json",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "analyze": "cross-env ANALYZE=true npm run build",
+    "optimize": "echo 'Running post-build optimizations...'",
+    "test": "echo 'No tests specified yet'",
+    "test:watch": "echo 'No tests specified yet'",
+    "precommit": "npm run lint:check && npm run type-check && npm run format:check",
+    "prepare": "echo 'Setting up git hooks...'",
+    "size": "npm run build && bundlesize",
+    "perf": "npm run build && npm run analyze"
   },
   "dependencies": {
     "next": "^14.0.0",

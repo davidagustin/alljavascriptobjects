@@ -6,6 +6,9 @@ export default function StringPage() {
       title="String"
       description="Represents a sequence of characters with extensive text manipulation capabilities"
       overview="The String constructor creates String objects. Strings are immutable sequences of UTF-16 code units. JavaScript strings support Unicode and provide numerous methods for searching, extracting, and manipulating text."
+      complexity="beginner"
+      relatedObjects={['RegExp', 'Array', 'Number', 'JSON']}
+      browserSupport="String is supported in all JavaScript environments and browsers."
       syntax={`// ============ CREATING STRINGS ============
 // String literals - most common methods
 const str1 = 'Single quotes';

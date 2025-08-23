@@ -1,0 +1,30 @@
+# <type>(<scope>): <subject>
+#
+# <body>
+#
+# <footer>
+
+# Type should be one of the following:
+# * feat (new feature)
+# * fix (bug fix)
+# * docs (documentation)
+# * style (formatting, no code change)
+# * refactor (refactoring code)
+# * test (adding tests)
+# * chore (maintenance)
+
+# Subject should use imperative mood and not end with period
+# Body should include motivation for the change and contrast with previous behavior
+# Footer should contain any BREAKING CHANGE or reference issues
+
+# Example:
+# feat(auth): add OAuth2 login support
+#
+# Implement Google and GitHub OAuth2 login to improve user experience
+# and provide secure authentication without requiring password management
+#
+# Closes #123
+
+# 🤖 Generated with Claude Code
+#
+# Co-Authored-By: Claude <noreply@anthropic.com>

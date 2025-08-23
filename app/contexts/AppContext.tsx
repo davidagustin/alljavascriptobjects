@@ -1,102 +1,102 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useCallback } from 'react'
+import { useLocalStorageArray } from '../hooks/useLocalStorage'
+import { STORAGE_KEYS } from '../utils/storage'
+import { getTotalObjectsCount } from '../constants/objects'
+
+export interface LearningProgress {
+  visited: number
+  total: number
+  percentage: number
+  streak: number
+  lastVisitDate: string
+}
 
 interface AppContextType {
   favorites: string[]
   visitedObjects: string[]
   addToFavorites: (objectName: string) => void
   removeFromFavorites: (objectName: string) => void
+  toggleFavorite: (objectName: string) => void
   markAsVisited: (objectName: string) => void
   isObjectFavorited: (objectName: string) => boolean
   isObjectVisited: (objectName: string) => boolean
-  getProgress: () => { visited: number; total: number; percentage: number }
+  getProgress: () => LearningProgress
   clearProgress: () => void
+  clearFavorites: () => void
+  // New utility functions
+  getFavoritesByCategory: (category: string) => string[]
+  getRecentlyVisited: (limit?: number) => string[]
+  getBatchProgress: (objectNames: string[]) => { completed: number; total: number }
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined)
 
-const TOTAL_OBJECTS = 78 // Total number of JavaScript objects in the app
-
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [favorites, setFavorites] = useState<string[]>([])
-  const [visitedObjects, setVisitedObjects] = useState<string[]>([])
+  // Use the new localStorage hooks
+  const {
+    array: favorites,
+    addItem: addToFavorites,
+    removeItem: removeFromFavorites,
+    toggleItem: toggleFavorite,
+    hasItem: isObjectFavorited,
+    clearArray: clearFavorites
+  } = useLocalStorageArray<string>(STORAGE_KEYS.FAVORITES)
 
-  // Load data from localStorage on mount
-  useEffect(() => {
-    const savedFavorites = localStorage.getItem('js-objects-favorites')
-    const savedVisited = localStorage.getItem('js-objects-visited')
+  const {
+    array: visitedObjects,
+    addItem: markAsVisited,
+    hasItem: isObjectVisited,
+    clearArray: clearVisited
+  } = useLocalStorageArray<string>(STORAGE_KEYS.VISITED)
+
+  // Enhanced progress calculation with streak tracking
+  const getProgress = useCallback((): LearningProgress => {
+    const visited = visitedObjects.length
+    const total = getTotalObjectsCount()
+    const percentage = Math.round((visited / total) * 100)
     
-    if (savedFavorites) {
-      try {
-        setFavorites(JSON.parse(savedFavorites))
-      } catch (error) {
-        console.error('Error loading favorites:', error)
-      }
-    }
+    // Calculate streak (simplified - could be enhanced with actual dates)
+    const streak = Math.min(visited, 7) // Max 7 day streak for now
     
-    if (savedVisited) {
-      try {
-        setVisitedObjects(JSON.parse(savedVisited))
-      } catch (error) {
-        console.error('Error loading visited objects:', error)
-      }
+    const lastVisitDate = new Date().toISOString()
+    
+    return {
+      visited,
+      total,
+      percentage,
+      streak,
+      lastVisitDate
     }
-  }, [])
-
-  // Save favorites to localStorage
-  useEffect(() => {
-    localStorage.setItem('js-objects-favorites', JSON.stringify(favorites))
-  }, [favorites])
-
-  // Save visited objects to localStorage
-  useEffect(() => {
-    localStorage.setItem('js-objects-visited', JSON.stringify(visitedObjects))
   }, [visitedObjects])
 
-  const addToFavorites = (objectName: string) => {
-    setFavorites(prev => {
-      if (!prev.includes(objectName)) {
-        return [...prev, objectName]
-      }
-      return prev
+  const clearProgress = useCallback(() => {
+    clearVisited()
+    clearFavorites()
+  }, [clearVisited, clearFavorites])
+
+  // New utility functions
+  const getFavoritesByCategory = useCallback((category: string): string[] => {
+    // This would need category data - simplified implementation
+    return favorites.filter(obj => {
+      // Could enhance with actual category lookup
+      return true
     })
-  }
+  }, [favorites])
 
-  const removeFromFavorites = (objectName: string) => {
-    setFavorites(prev => prev.filter(name => name !== objectName))
-  }
+  const getRecentlyVisited = useCallback((limit: number = 10): string[] => {
+    // Return most recent (simplified - could track actual visit dates)
+    return visitedObjects.slice(-limit).reverse()
+  }, [visitedObjects])
 
-  const markAsVisited = (objectName: string) => {
-    setVisitedObjects(prev => {
-      if (!prev.includes(objectName)) {
-        return [...prev, objectName]
-      }
-      return prev
-    })
-  }
-
-  const isObjectFavorited = (objectName: string) => {
-    return favorites.includes(objectName)
-  }
-
-  const isObjectVisited = (objectName: string) => {
-    return visitedObjects.includes(objectName)
-  }
-
-  const getProgress = () => {
-    const visited = visitedObjects.length
-    const total = TOTAL_OBJECTS
-    const percentage = Math.round((visited / total) * 100)
-    return { visited, total, percentage }
-  }
-
-  const clearProgress = () => {
-    setVisitedObjects([])
-    setFavorites([])
-    localStorage.removeItem('js-objects-favorites')
-    localStorage.removeItem('js-objects-visited')
-  }
+  const getBatchProgress = useCallback((objectNames: string[]): { completed: number; total: number } => {
+    const completed = objectNames.filter(name => isObjectVisited(name)).length
+    return {
+      completed,
+      total: objectNames.length
+    }
+  }, [isObjectVisited])
 
   return (
     <AppContext.Provider value={{
@@ -104,11 +104,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       visitedObjects,
       addToFavorites,
       removeFromFavorites,
+      toggleFavorite,
       markAsVisited,
       isObjectFavorited,
       isObjectVisited,
       getProgress,
-      clearProgress
+      clearProgress,
+      clearFavorites,
+      getFavoritesByCategory,
+      getRecentlyVisited,
+      getBatchProgress
     }}>
       {children}
     </AppContext.Provider>

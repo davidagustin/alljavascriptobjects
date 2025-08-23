@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Copy, Check, ExternalLink, Play, Book, Code2 } from 'lucide-react'
+import { cacheObjectPage } from './ServiceWorkerRegistration'
 
 interface ObjectExamplesProps {
   selectedObject: string
@@ -10,6 +11,22 @@ interface ObjectExamplesProps {
 export default function ObjectExamples({ selectedObject }: ObjectExamplesProps) {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null)
   const [runningExample, setRunningExample] = useState<number | null>(null)
+
+  // Cache the current object page for offline access
+  useEffect(() => {
+    const cacheCurrentPage = async () => {
+      const currentPath = window.location.pathname
+      const objectPath = `/${selectedObject.toLowerCase()}`
+      
+      // Cache both current page and object-specific page
+      cacheObjectPage(currentPath)
+      if (currentPath !== objectPath) {
+        cacheObjectPage(objectPath)
+      }
+    }
+    
+    cacheCurrentPage()
+  }, [selectedObject])
 
   const copyToClipboard = useCallback(async (text: string, index: number) => {
     try {
@@ -55,6 +72,42 @@ export default function ObjectExamples({ selectedObject }: ObjectExamplesProps) 
       setRunningExample(null)
     }
   }, [])
+
+  // Get MDN documentation link
+  const getMDNLink = (objectName: string) => {
+    const baseURL = 'https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/'
+    const objectMappings: { [key: string]: string } = {
+      'Object': 'Object',
+      'Array': 'Array',
+      'String': 'String',
+      'Number': 'Number',
+      'Boolean': 'Boolean',
+      'Date': 'Date',
+      'Math': 'Math',
+      'JSON': 'JSON',
+      'Promise': 'Promise',
+      'Map': 'Map',
+      'Set': 'Set',
+      'RegExp': 'RegExp',
+      'Error': 'Error',
+      'Symbol': 'Symbol',
+      'Proxy': 'Proxy',
+      'WeakMap': 'WeakMap',
+      'WeakSet': 'WeakSet',
+      'AggregateError': 'AggregateError',
+      'EvalError': 'EvalError',
+      'RangeError': 'RangeError',
+      'ReferenceError': 'ReferenceError',
+      'SyntaxError': 'SyntaxError',
+      'TypeError': 'TypeError',
+      'URIError': 'URIError',
+      'InternalError': 'InternalError',
+      'SuppressedError': 'SuppressedError'
+    }
+
+    const mdnPath = objectMappings[objectName] || objectName
+    return `${baseURL}${mdnPath}`
+  }
 
   const getObjectExamples = (objectName: string) => {
     const examples: { [key: string]: { description: string; examples: string[] } } = {

@@ -1,14 +1,14 @@
 'use client'
 
-import { useState, useCallback, useRef, useEffect } from 'react'
-import { Play, CheckCircle, XCircle, AlertCircle, Clock, Target, Zap, Award, TrendingUp, BarChart3 } from 'lucide-react'
+import { useState, useCallback, useRef } from 'react'
+import { Play, CheckCircle, XCircle, AlertCircle, Clock, Target } from 'lucide-react'
 
 interface TestCase {
   id: string
   name: string
   description: string
   code: string
-  expected: any
+  expected: unknown
   timeout: number
   category: string
 }
@@ -17,8 +17,8 @@ interface TestResult {
   id: string
   testId: string
   passed: boolean
-  actual: any
-  expected: any
+  actual: unknown
+  expected: unknown
   error?: string
   duration: number
   timestamp: Date
@@ -195,11 +195,8 @@ const BUILT_IN_TEST_SUITES: TestSuite[] = [
 
 export default function TestingSystem() {
   const [testSuites] = useState<TestSuite[]>(BUILT_IN_TEST_SUITES)
-  const [selectedSuite, setSelectedSuite] = useState<string>('')
   const [runningTests, setRunningTests] = useState<Set<string>>(new Set())
   const [testResults, setTestResults] = useState<TestResult[]>([])
-  const [showResults, setShowResults] = useState(true)
-  const [autoRun, setAutoRun] = useState(false)
   const abortControllerRef = useRef<AbortController>()
 
   const executeTest = useCallback(async (test: TestCase): Promise<TestResult> => {

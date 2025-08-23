@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline - JavaScript Objects Reference</title>
+    <link rel="icon" type="image/png" href="/icon-192x192.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .offline-container {
+            background: white;
+            border-radius: 12px;
+            padding: 3rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        .offline-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 2rem;
+            background: #f0f0f0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+        }
+        
+        .offline-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: #2563eb;
+        }
+        
+        .offline-description {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+            color: #6b7280;
+        }
+        
+        .offline-features {
+            background: #f9fafb;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            text-align: left;
+        }
+        
+        .offline-features h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #374151;
+        }
+        
+        .offline-features ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .offline-features li {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+            color: #6b7280;
+        }
+        
+        .offline-features li:before {
+            content: '✓';
+            color: #10b981;
+            font-weight: bold;
+            margin-right: 0.75rem;
+            font-size: 1rem;
+        }
+        
+        .retry-button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            margin-right: 12px;
+        }
+        
+        .retry-button:hover {
+            background: #1d4ed8;
+        }
+        
+        .home-button {
+            background: #e5e7eb;
+            color: #374151;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .home-button:hover {
+            background: #d1d5db;
+        }
+        
+        .network-status {
+            display: inline-flex;
+            align-items: center;
+            margin-top: 1rem;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        
+        .network-status.offline {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        
+        .network-status.online {
+            background: #dcfce7;
+            color: #16a34a;
+        }
+        
+        .network-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .network-dot.offline {
+            background: #dc2626;
+        }
+        
+        .network-dot.online {
+            background: #16a34a;
+        }
+        
+        @media (max-width: 480px) {
+            .offline-container {
+                padding: 2rem 1.5rem;
+            }
+            
+            .offline-title {
+                font-size: 1.5rem;
+            }
+            
+            .offline-description {
+                font-size: 1rem;
+            }
+            
+            .retry-button, .home-button {
+                display: block;
+                width: 100%;
+                margin: 8px 0;
+            }
+        }
+        
+        @media (prefers-color-scheme: dark) {
+            body {
+                background: linear-gradient(135deg, #1e3a8a 0%, #581c87 100%);
+            }
+            
+            .offline-container {
+                background: #1f2937;
+                color: #f9fafb;
+            }
+            
+            .offline-title {
+                color: #60a5fa;
+            }
+            
+            .offline-description {
+                color: #d1d5db;
+            }
+            
+            .offline-features {
+                background: #374151;
+            }
+            
+            .offline-features h3 {
+                color: #f9fafb;
+            }
+            
+            .offline-features li {
+                color: #d1d5db;
+            }
+            
+            .home-button {
+                background: #4b5563;
+                color: #f9fafb;
+            }
+            
+            .home-button:hover {
+                background: #6b7280;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-container">
+        <div class="offline-icon">
+            📡
+        </div>
+        
+        <h1 class="offline-title">You're Offline</h1>
+        
+        <p class="offline-description">
+            No internet connection found. But don't worry! Your cached JavaScript Objects Reference content is still available.
+        </p>
+        
+        <div class="offline-features">
+            <h3>Available Offline Features:</h3>
+            <ul>
+                <li>Browse previously visited JavaScript objects</li>
+                <li>View cached method examples and syntax</li>
+                <li>Access your favorites and progress</li>
+                <li>Use the interactive code playground</li>
+                <li>Search through cached content</li>
+            </ul>
+        </div>
+        
+        <div>
+            <button class="retry-button" onclick="retryConnection()">
+                Try Again
+            </button>
+            <a href="/" class="home-button">
+                Go to Home
+            </a>
+        </div>
+        
+        <div id="networkStatus" class="network-status offline">
+            <div class="network-dot offline"></div>
+            You're currently offline
+        </div>
+    </div>
+    
+    <script>
+        // Network status monitoring
+        function updateNetworkStatus() {
+            const statusElement = document.getElementById('networkStatus');
+            const dot = statusElement.querySelector('.network-dot');
+            
+            if (navigator.onLine) {
+                statusElement.className = 'network-status online';
+                statusElement.innerHTML = '<div class="network-dot online"></div>You\'re back online!';
+                
+                // Automatically retry connection after 2 seconds
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            } else {
+                statusElement.className = 'network-status offline';
+                statusElement.innerHTML = '<div class="network-dot offline"></div>You\'re currently offline';
+            }
+        }
+        
+        // Retry connection
+        function retryConnection() {
+            if (navigator.onLine) {
+                window.location.reload();
+            } else {
+                // Show a brief feedback
+                const button = document.querySelector('.retry-button');
+                const originalText = button.textContent;
+                button.textContent = 'Still Offline...';
+                button.disabled = true;
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.disabled = false;
+                }, 2000);
+            }
+        }
+        
+        // Listen for network changes
+        window.addEventListener('online', updateNetworkStatus);
+        window.addEventListener('offline', updateNetworkStatus);
+        
+        // Initial status check
+        updateNetworkStatus();
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                if (event.target === document.body) {
+                    retryConnection();
+                }
+            } else if (event.key === 'h' || event.key === 'Home') {
+                window.location.href = '/';
+            }
+        });
+        
+        // Auto-retry every 30 seconds when offline
+        setInterval(() => {
+            if (!navigator.onLine) {
+                // Just update status, don't auto-reload
+                updateNetworkStatus();
+            }
+        }, 30000);
+        
+        // PWA install prompt for offline use
+        let deferredPrompt;
+        
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Show custom install button if not already installed
+            if (!window.matchMedia('(display-mode: standalone)').matches) {
+                showInstallPromotion();
+            }
+        });
+        
+        function showInstallPromotion() {
+            const installDiv = document.createElement('div');
+            installDiv.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                left: 20px;
+                right: 20px;
+                background: #2563eb;
+                color: white;
+                padding: 16px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                z-index: 1000;
+                animation: slideUp 0.3s ease;
+            `;
+            
+            installDiv.innerHTML = `
+                <div>
+                    <strong>Install for Better Offline Access</strong><br>
+                    <small>Get the full experience even when offline</small>
+                </div>
+                <div>
+                    <button onclick="installApp()" style="background: white; color: #2563eb; border: none; padding: 8px 16px; border-radius: 4px; margin-right: 8px; cursor: pointer; font-weight: 600;">Install</button>
+                    <button onclick="this.parentElement.parentElement.remove()" style="background: transparent; color: white; border: 1px solid white; padding: 8px 16px; border-radius: 4px; cursor: pointer;">Later</button>
+                </div>
+            `;
+            
+            document.body.appendChild(installDiv);
+            
+            // Auto-hide after 10 seconds
+            setTimeout(() => {
+                if (installDiv.parentElement) {
+                    installDiv.remove();
+                }
+            }, 10000);
+        }
+        
+        function installApp() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    console.log('PWA install prompt result:', choiceResult.outcome);
+                    deferredPrompt = null;
+                });
+            }
+        }
+        
+        // Add CSS animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideUp {
+                from { transform: translateY(100%); opacity: 0; }
+                to { transform: translateY(0); opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

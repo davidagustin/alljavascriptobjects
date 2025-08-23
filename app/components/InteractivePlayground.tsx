@@ -1,12 +1,12 @@
 'use client'
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
-import { Play, Square, RotateCcw, Download, Upload, Share2, Settings, Terminal, Eye, EyeOff, Maximize2, Minimize2, Copy, Check, AlertTriangle, Info, Bug } from 'lucide-react'
+import { Play, Square, RotateCcw, Download, Upload, Share2, Settings, Terminal, Eye, EyeOff, Maximize2, Minimize2, Copy, Check, AlertTriangle, Info } from 'lucide-react'
 
 interface ConsoleMessage {
   id: string
   type: 'log' | 'error' | 'warn' | 'info'
-  content: any[]
+  content: unknown[]
   timestamp: Date
   source?: string
 }
@@ -94,7 +94,7 @@ export default function InteractivePlayground({
     const originalConsole = { ...console }
     const messages: ConsoleMessage[] = []
 
-    const createLogger = (type: ConsoleMessage['type']) => (...args: any[]) => {
+    const createLogger = (type: ConsoleMessage['type']) => (...args: unknown[]) => {
       const message: ConsoleMessage = {
         id: Date.now() + Math.random().toString(),
         type,
@@ -287,7 +287,7 @@ export default function InteractivePlayground({
   }, [state.code])
 
   // Format console message for display
-  const formatConsoleMessage = useCallback((content: any[]): string => {
+  const formatConsoleMessage = useCallback((content: unknown[]): string => {
     return content.map(item => {
       if (typeof item === 'object') {
         try {

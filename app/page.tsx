@@ -1,24 +1,26 @@
 'use client'
 
 import { useState, useCallback, useMemo, useEffect } from 'react'
-import CodeEditor from './components/CodeEditor'
-import ObjectExamples from './components/ObjectExamples'
+import TabbedInterface from './components/TabbedInterface'
 import ThemeToggle from './components/ThemeToggle'
 import FavoriteButton from './components/FavoriteButton'
 import ProgressBar from './components/ProgressBar'
 import KeyboardShortcuts from './components/KeyboardShortcuts'
 import QuickLinks from './components/QuickLinks'
 import LearningStats from './components/LearningStats'
+import PWAInstallButton from './components/PWAInstallButton'
+import StudyMode from './components/StudyMode'
+import Notifications, { NotificationProvider, useNotifications } from './components/Notifications'
 import { BookOpen, Code, Play, Search, Star, TrendingUp, Clock } from 'lucide-react'
 import { useApp } from './contexts/AppContext'
 
-export default function Home() {
+function HomeContent() {
   const [selectedObject, setSelectedObject] = useState<string>('Object')
-  const [code, setCode] = useState<string>('// Start coding here...')
   const [searchTerm, setSearchTerm] = useState<string>('')
   const [filterType, setFilterType] = useState<'all' | 'favorites' | 'visited'>('all')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const { favorites, isObjectVisited, markAsVisited, isObjectFavorited } = useApp()
+  const { notifications, markAsRead, clearAll } = useNotifications()
 
   const objectCategories = useMemo(() => ({
     'Fundamental': ['Object', 'Function', 'Boolean', 'Symbol'],
@@ -99,9 +101,7 @@ export default function Home() {
     setSearchTerm(e.target.value)
   }, [])
 
-  const handleCodeChange = useCallback((newCode: string) => {
-    setCode(newCode)
-  }, [])
+
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
@@ -116,6 +116,12 @@ export default function Home() {
               </h1>
             </div>
             <div className="flex items-center space-x-4">
+              <PWAInstallButton showPromoBanner={true} />
+              <Notifications 
+                notifications={notifications} 
+                onMarkAsRead={markAsRead} 
+                onClearAll={clearAll} 
+              />
               <ThemeToggle />
               <span className="text-sm text-gray-500 dark:text-gray-400">
                 {objects.length} Objects
@@ -131,6 +137,9 @@ export default function Home() {
           <div className="lg:col-span-1 space-y-6">
             {/* Quick Links */}
             <QuickLinks />
+            
+            {/* Study Mode */}
+            <StudyMode onObjectSelect={handleObjectSelect} objects={objects} />
             
             {/* Learning Stats */}
             <LearningStats />
@@ -269,30 +278,29 @@ export default function Home() {
 
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Object Examples */}
-            <ObjectExamples selectedObject={selectedObject} />
-            
-            
-            {/* Code Editor */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-              <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
-                  <Play className="h-5 w-5 mr-2" />
-                  Code Playground
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  Write and test your code examples here
-                </p>
-              </div>
-              <CodeEditor code={code} setCode={handleCodeChange} />
-            </div>
+            {/* Tabbed Interface */}
+            <TabbedInterface 
+              selectedObject={selectedObject} 
+              onSelectObject={handleObjectSelect} 
+            />
           </div>
         </div>
       </div>
 
       {/* Keyboard Shortcuts */}
       <KeyboardShortcuts />
+
+      {/* PWA Install Banner */}
+      <PWAInstallButton />
       
     </div>
+  )
+}
+
+export default function Home() {
+  return (
+    <NotificationProvider>
+      <HomeContent />
+    </NotificationProvider>
   )
 }

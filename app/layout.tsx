@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { AppProvider } from './contexts/AppContext'
+import ServiceWorkerRegistration from './components/ServiceWorkerRegistration'
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -68,6 +69,7 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className={`${inter.className} antialiased`}>
+        <ServiceWorkerRegistration />
         <ThemeProvider>
           <AppProvider>
             {children}
