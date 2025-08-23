@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # JavaScript Objects Tutorial
 
 A comprehensive TypeScript React tutorial on all JavaScript objects with interactive examples and code compilation.
@@ -169,3 +170,7 @@ This project is open source and available under the [MIT License](LICENSE).
 - Styled with [Tailwind CSS](https://tailwindcss.com/)
 - Icons from [Lucide React](https://lucide.dev/)
 - Fonts from [Google Fonts](https://fonts.google.com/)
+=======
+# alljavascriptobjects
+A comprehensive TypeScript React tutorial on all JavaScript objects with examples and code compilation
+>>>>>>> d5e040ec62f098fc22ccc294fe18c062a503dbb1
