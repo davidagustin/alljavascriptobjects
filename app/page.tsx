@@ -13,74 +13,60 @@ import StudyMode from './components/StudyMode'
 import Notifications, { NotificationProvider, useNotifications } from './components/Notifications'
 import { BookOpen, Code, Play, Search, Star, TrendingUp, Clock } from 'lucide-react'
 import { useApp } from './contexts/AppContext'
+import { OBJECT_CATEGORIES, getAllObjects } from './constants/objects'
+import { searchObjects, filterObjects } from './utils/search'
+import { usePerformanceTracking } from './utils/performance'
 
 function HomeContent() {
   const [selectedObject, setSelectedObject] = useState<string>('Object')
   const [searchTerm, setSearchTerm] = useState<string>('')
   const [filterType, setFilterType] = useState<'all' | 'favorites' | 'visited'>('all')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
-  const { favorites, isObjectVisited, markAsVisited, isObjectFavorited } = useApp()
+  
+  const { favorites, isObjectVisited, markAsVisited, isObjectFavorited, visitedObjects } = useApp()
   const { notifications, markAsRead, clearAll } = useNotifications()
+  const { trackInteraction } = usePerformanceTracking()
 
-  const objectCategories = useMemo(() => ({
-    'Fundamental': ['Object', 'Function', 'Boolean', 'Symbol'],
-    'Numbers & Math': ['Number', 'BigInt', 'Math', 'NaN', 'Infinity', 'isFinite()', 'isNaN()', 'parseFloat()', 'parseInt()'],
-    'Text': ['String', 'RegExp'],
-    'Collections': ['Array', 'Map', 'Set', 'WeakMap', 'WeakSet', 'WeakRef'],
-    'Typed Arrays': ['ArrayBuffer', 'SharedArrayBuffer', 'DataView', 'TypedArray', 
-                     'Int8Array', 'Uint8Array', 'Uint8ClampedArray', 'Int16Array', 
-                     'Uint16Array', 'Int32Array', 'Uint32Array', 'Float32Array', 
-                     'Float64Array', 'BigInt64Array', 'BigUint64Array', 'Float16Array'],
-    'Errors': ['Error', 'AggregateError', 'EvalError', 'RangeError', 'ReferenceError', 
-               'SyntaxError', 'TypeError', 'URIError', 'InternalError', 'SuppressedError'],
-    'Control Flow': ['Promise', 'AsyncFunction', 'Generator', 'GeneratorFunction', 
-                     'AsyncGenerator', 'AsyncGeneratorFunction', 'Iterator', 'AsyncIterator'],
-    'Memory Management': ['FinalizationRegistry', 'DisposableStack', 'AsyncDisposableStack'],
-    'Meta Programming': ['Proxy', 'Reflect'],
-    'Internationalization': ['Intl', 'Date', 'Temporal'],
-    'Data Processing': ['JSON', 'Atomics'],
-    'Global Functions': ['globalThis', 'eval()', 'decodeURI()', 'decodeURIComponent()', 
-                        'encodeURI()', 'encodeURIComponent()', 'escape()', 'unescape()', 'undefined']
-  }), [])
+  const objectCategories = useMemo(() => OBJECT_CATEGORIES, [])
+  const objects = useMemo(() => getAllObjects(), [])
 
-  const objects = useMemo(() => 
-    Object.values(objectCategories).flat()
-  , [objectCategories])
-
+  // Enhanced filtering with search functionality
   const filteredObjects = useMemo(() => {
     let filtered = objects
 
     // Apply category filter first
     if (selectedCategory !== 'all') {
-      filtered = objectCategories[selectedCategory as keyof typeof objectCategories] || []
+      filtered = objectCategories[selectedCategory].objects
     }
 
-    // Apply search filter
+    // Apply search filter with enhanced search
     if (searchTerm) {
+      const searchResults = searchObjects(searchTerm, favorites, visitedObjects)
       filtered = filtered.filter(obj => 
-        obj.toLowerCase().includes(searchTerm.toLowerCase())
+        searchResults.some(result => result.objectName === obj)
       )
     }
 
     // Apply type filter
-    switch (filterType) {
-      case 'favorites':
-        filtered = filtered.filter(obj => isObjectFavorited(obj))
-        break
-      case 'visited':
-        filtered = filtered.filter(obj => isObjectVisited(obj))
-        break
-      default:
-        break
-    }
+    filtered = filterObjects(filtered, {
+      favorites: filterType === 'favorites',
+      visited: filterType === 'visited'
+    }, favorites, visitedObjects)
 
     return filtered
-  }, [objects, objectCategories, selectedCategory, searchTerm, filterType, isObjectFavorited, isObjectVisited])
+  }, [objects, objectCategories, selectedCategory, searchTerm, filterType, favorites, visitedObjects])
 
   const handleObjectSelect = useCallback((objectName: string) => {
     setSelectedObject(objectName)
     markAsVisited(objectName)
-  }, [markAsVisited])
+    
+    // Track user interaction for analytics
+    trackInteraction('object_select', objectName, {
+      category: selectedCategory,
+      searchTerm: searchTerm || null,
+      filterType
+    })
+  }, [markAsVisited, trackInteraction, selectedCategory, searchTerm, filterType])
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -98,8 +84,18 @@ function HomeContent() {
   }, [])
 
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value)
-  }, [])
+    const value = e.target.value
+    setSearchTerm(value)
+    
+    // Track search interactions
+    if (value.length >= 3) {
+      trackInteraction('search', value, {
+        category: selectedCategory,
+        filterType,
+        resultsCount: filteredObjects.length
+      })
+    }
+  }, [trackInteraction, selectedCategory, filterType, filteredObjects.length])
 
 
 
