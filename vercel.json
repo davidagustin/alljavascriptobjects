@@ -1,0 +1,21 @@
+{
+  "buildCommand": "next build",
+  "framework": "nextjs",
+  "regions": ["iad1"],
+  "functions": {
+    "app/page.tsx": {
+      "maxDuration": 30
+    },
+    "app/*/page.tsx": {
+      "maxDuration": 15
+    }
+  },
+  "env": {
+    "NEXT_TELEMETRY_DISABLED": "1"
+  },
+  "build": {
+    "env": {
+      "NODE_OPTIONS": "--max-old-space-size=2048"
+    }
+  }
+}

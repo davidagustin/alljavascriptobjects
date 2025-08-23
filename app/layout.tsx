@@ -4,6 +4,7 @@ import './globals.css'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { AppProvider } from './contexts/AppContext'
 import ServiceWorkerRegistration from './components/ServiceWorkerRegistration'
+import ErrorBoundary from './components/ErrorBoundary'
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -70,11 +71,13 @@ export default function RootLayout({
       </head>
       <body className={`${inter.className} antialiased`}>
         <ServiceWorkerRegistration />
-        <ThemeProvider>
-          <AppProvider>
-            {children}
-          </AppProvider>
-        </ThemeProvider>
+        <ErrorBoundary>
+          <ThemeProvider>
+            <AppProvider>
+              {children}
+            </AppProvider>
+          </ThemeProvider>
+        </ErrorBoundary>
       </body>
     </html>
   )
