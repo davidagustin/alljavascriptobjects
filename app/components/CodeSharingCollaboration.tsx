@@ -245,7 +245,7 @@ greetUser({ name: 'Bob' }); // Hello Bob, age: unknown`,
 
   // Filter and sort codes
   const filteredAndSortedCodes = useMemo(() => {
-    let filtered = sharedCodes.filter(code => {
+    const filtered = sharedCodes.filter(code => {
       const matchesSearch = code.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           code.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           code.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))

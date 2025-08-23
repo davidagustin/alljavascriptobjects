@@ -1,257 +1,188 @@
 'use client'
 
-import { useState, useCallback, useRef, useEffect } from 'react'
-import { Play, Square, RotateCcw, Copy, Download, Upload, Settings, AlertCircle, CheckCircle, Clock } from 'lucide-react'
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
+import { Play, Copy, RotateCcw, Download, Upload, Share2, Settings, Terminal, Eye, EyeOff, Maximize2, Minimize2, Check, AlertTriangle, Info, Save, FileText } from 'lucide-react'
+import { useApp } from '../contexts/AppContext'
+import { usePerformanceTracking } from '../utils/performance'
+import { executeCodeSafely } from '../utils/errorHandling'
 
 interface CodeRunnerProps {
-  initialCode?: string
-  onOutput?: (output: string) => void
-  onError?: (error: string) => void
-  theme?: 'light' | 'dark'
+  selectedObject: string
+  onSelectObject: (objectName: string) => void
 }
 
-interface ExecutionResult {
-  output: string[]
+interface ConsoleMessage {
+  id: string
+  type: 'log' | 'error' | 'warn' | 'info' | 'success'
+  content: unknown[]
+  timestamp: Date
+  source?: string
+}
+
+interface CodeExecution {
+  id: string
+  code: string
+  output: ConsoleMessage[]
   errors: string[]
-  executionTime: number
-  memoryUsage?: number
+  duration: number
+  timestamp: Date
+  success: boolean
 }
 
-export default function CodeRunner({ 
-  initialCode = '// Write your JavaScript code here\nconsole.log("Hello, World!");', 
-  onOutput,
-  onError,
-  theme = 'light'
-}: CodeRunnerProps) {
-  const [code, setCode] = useState(initialCode)
+export default function CodeRunner({ selectedObject }: CodeRunnerProps) {
+  const [code, setCode] = useState('// Start coding here...')
+  const [output, setOutput] = useState<ConsoleMessage[]>([])
   const [isRunning, setIsRunning] = useState(false)
-  const [results, setResults] = useState<ExecutionResult>({ output: [], errors: [], executionTime: 0 })
-  const [executionMode, setExecutionMode] = useState<'safe' | 'strict' | 'experimental'>('safe')
-  const [autoRun, setAutoRun] = useState(false)
-  const [showSettings, setShowSettings] = useState(false)
-  const timeoutRef = useRef<NodeJS.Timeout>()
-  const workerRef = useRef<Worker>()
+  const [showConsole, setShowConsole] = useState(true)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const [executionHistory, setExecutionHistory] = useState<CodeExecution[]>([])
+  const [autoSave, setAutoSave] = useState(true)
+  
+  const { trackInteraction, measureAsync } = usePerformanceTracking()
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // Auto-run effect
+  // Auto-save code to localStorage
   useEffect(() => {
-    if (autoRun && code) {
-      const timer = setTimeout(() => {
-        runCode()
-      }, 1000)
-      return () => clearTimeout(timer)
+    if (autoSave && code) {
+      localStorage.setItem(`code-${selectedObject}`, code)
     }
-  }, [code, autoRun])
+  }, [code, selectedObject, autoSave])
 
-  // Cleanup on unmount
+  // Load saved code when object changes
   useEffect(() => {
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current)
-      if (workerRef.current) workerRef.current.terminate()
+    const savedCode = localStorage.getItem(`code-${selectedObject}`)
+    if (savedCode) {
+      setCode(savedCode)
+    } else {
+      setCode(`// ${selectedObject} examples\n// Start coding here...`)
     }
-  }, [])
-
-  const createSafeEnvironment = () => {
-    const safeGlobals = {
-      console: {
-        log: (...args: any[]) => {
-          const output = args.map(arg => 
-            typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-          ).join(' ')
-          return { type: 'log', content: output }
-        },
-        error: (...args: any[]) => {
-          const output = args.map(arg => 
-            typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-          ).join(' ')
-          return { type: 'error', content: output }
-        },
-        warn: (...args: any[]) => {
-          const output = args.map(arg => 
-            typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-          ).join(' ')
-          return { type: 'warn', content: output }
-        },
-        info: (...args: any[]) => {
-          const output = args.map(arg => 
-            typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-          ).join(' ')
-          return { type: 'info', content: output }
-        }
-      },
-      setTimeout: (fn: Function, delay: number) => {
-        if (delay > 5000) throw new Error('Timeout delay cannot exceed 5000ms')
-        return setTimeout(fn, Math.min(delay, 5000))
-      },
-      setInterval: (fn: Function, delay: number) => {
-        if (delay > 5000) throw new Error('Interval delay cannot exceed 5000ms')
-        return setInterval(fn, Math.min(delay, 5000))
-      },
-      clearTimeout,
-      clearInterval,
-      Math,
-      Date,
-      JSON,
-      Array,
-      Object,
-      String,
-      Number,
-      Boolean,
-      RegExp,
-      Error,
-      TypeError,
-      RangeError,
-      SyntaxError,
-      ReferenceError,
-      Promise,
-      Map,
-      Set,
-      WeakMap,
-      WeakSet,
-      Symbol,
-      BigInt,
-      Int8Array,
-      Uint8Array,
-      Int16Array,
-      Uint16Array,
-      Int32Array,
-      Uint32Array,
-      Float32Array,
-      Float64Array,
-      BigInt64Array,
-      BigUint64Array,
-      DataView,
-      ArrayBuffer,
-      SharedArrayBuffer,
-      Atomics,
-      Reflect,
-      Proxy
-    }
-
-    return safeGlobals
-  }
+  }, [selectedObject])
 
   const runCode = useCallback(async () => {
+    if (!code.trim()) return
+
     setIsRunning(true)
-    const startTime = performance.now()
-    
+    const startTime = Date.now()
+    const executionId = Date.now().toString()
+
     try {
-      const outputs: string[] = []
-      const errors: string[] = []
-      
-      // Create safe execution environment
-      const safeGlobals = createSafeEnvironment()
-      
-      // Override console methods to capture output
-      const originalConsole = { ...console }
-      const capturedOutputs: Array<{ type: string; content: string }> = []
-      
-      Object.keys(safeGlobals.console).forEach(key => {
-        const original = console[key as keyof Console]
-        console[key as keyof Console] = (...args: any[]) => {
-          const result = safeGlobals.console[key as keyof typeof safeGlobals.console](...args)
-          if (result) capturedOutputs.push(result)
-          original.apply(console, args)
-        }
-      })
+      const result = await measureAsync(
+        executeCodeSafely(code),
+        'code_execution'
+      )
 
-      // Execute code with timeout
-      const timeoutPromise = new Promise((_, reject) => {
-        timeoutRef.current = setTimeout(() => {
-          reject(new Error('Execution timeout (5 seconds)'))
-        }, 5000)
-      })
+      const duration = Date.now() - startTime
+      const newMessages: ConsoleMessage[] = []
 
-      const executionPromise = new Promise(() => {
-        try {
-          // Create function with restricted scope
-          const func = new Function(...Object.keys(safeGlobals), code)
-          func(...Object.values(safeGlobals))
-        } catch (error) {
-          throw error
-        }
-      })
-
-      await Promise.race([executionPromise, timeoutPromise])
-      
-      // Process captured outputs
-      capturedOutputs.forEach(output => {
-        if (output.type === 'error') {
-          errors.push(output.content)
-        } else {
-          outputs.push(`[${output.type.toUpperCase()}] ${output.content}`)
-        }
-      })
-
-      const executionTime = performance.now() - startTime
-      
-      const result: ExecutionResult = {
-        output: outputs,
-        errors,
-        executionTime
+      // Process console output
+      if (result.consoleOutput) {
+        result.consoleOutput.forEach((msg, index) => {
+          newMessages.push({
+            id: `${executionId}-${index}`,
+            type: msg.type || 'log',
+            content: msg.content,
+            timestamp: new Date(),
+            source: 'user-code'
+          })
+        })
       }
 
-      setResults(result)
+      // Add execution result
+      if (result.result !== undefined) {
+        newMessages.push({
+          id: `${executionId}-result`,
+          type: 'success',
+          content: [result.result],
+          timestamp: new Date(),
+          source: 'execution-result'
+        })
+      }
+
+      // Add errors if any
+      if (result.errors.length > 0) {
+        result.errors.forEach((error, index) => {
+          newMessages.push({
+            id: `${executionId}-error-${index}`,
+            type: 'error',
+            content: [error],
+            timestamp: new Date(),
+            source: 'execution-error'
+          })
+        })
+      }
+
+      setOutput(prev => [...newMessages, ...prev])
       
-      if (outputs.length > 0) {
-        onOutput?.(outputs.join('\n'))
+      // Save to execution history
+      const execution: CodeExecution = {
+        id: executionId,
+        code,
+        output: newMessages,
+        errors: result.errors,
+        duration,
+        timestamp: new Date(),
+        success: result.errors.length === 0
       }
-      if (errors.length > 0) {
-        onError?.(errors.join('\n'))
-      }
+      
+      setExecutionHistory(prev => [execution, ...prev.slice(0, 9)]) // Keep last 10
+
+      trackInteraction('code_run', selectedObject, {
+        codeLength: code.length,
+        duration,
+        success: result.errors.length === 0,
+        errorCount: result.errors.length
+      })
 
     } catch (error) {
-      const executionTime = performance.now() - startTime
-      const errorMessage = error instanceof Error ? error.message : String(error)
+      const duration = Date.now() - startTime
+      const errorMessage: ConsoleMessage = {
+        id: `${executionId}-error`,
+        type: 'error',
+        content: [String(error)],
+        timestamp: new Date(),
+        source: 'execution-error'
+      }
       
-      setResults({
-        output: [],
-        errors: [errorMessage],
-        executionTime
+      setOutput(prev => [errorMessage, ...prev])
+      
+      trackInteraction('code_run_error', selectedObject, {
+        codeLength: code.length,
+        duration,
+        error: String(error)
       })
-      
-      onError?.(errorMessage)
     } finally {
       setIsRunning(false)
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current)
-      }
     }
-  }, [code, onOutput, onError])
-
-  const stopExecution = useCallback(() => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current)
-    }
-    if (workerRef.current) {
-      workerRef.current.terminate()
-    }
-    setIsRunning(false)
-  }, [])
+  }, [code, selectedObject, trackInteraction, measureAsync])
 
   const resetCode = useCallback(() => {
-    setCode(initialCode)
-    setResults({ output: [], errors: [], executionTime: 0 })
-  }, [initialCode])
+    setCode(`// ${selectedObject} examples\n// Start coding here...`)
+    setOutput([])
+    trackInteraction('code_reset', selectedObject)
+  }, [selectedObject, trackInteraction])
 
   const copyCode = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(code)
+      trackInteraction('code_copy', selectedObject)
     } catch (error) {
       console.error('Failed to copy code:', error)
     }
-  }, [code])
+  }, [code, selectedObject, trackInteraction])
 
   const downloadCode = useCallback(() => {
     const blob = new Blob([code], { type: 'text/javascript' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'code.js'
+    a.download = `${selectedObject}-example.js`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
-  }, [code])
+    
+    trackInteraction('code_download', selectedObject)
+  }, [code, selectedObject, trackInteraction])
 
   const uploadCode = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -260,198 +191,260 @@ export default function CodeRunner({
       reader.onload = (e) => {
         const content = e.target?.result as string
         setCode(content)
+        trackInteraction('code_upload', selectedObject)
       }
       reader.readAsText(file)
     }
-  }, [])
+  }, [selectedObject, trackInteraction])
+
+  const clearConsole = useCallback(() => {
+    setOutput([])
+    trackInteraction('console_clear', selectedObject)
+  }, [selectedObject, trackInteraction])
+
+  const formatCode = useCallback(() => {
+    try {
+      // Basic code formatting (you could integrate with prettier here)
+      const formatted = code
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0)
+        .join('\n')
+      setCode(formatted)
+      trackInteraction('code_format', selectedObject)
+    } catch (error) {
+      console.error('Failed to format code:', error)
+    }
+  }, [code, selectedObject, trackInteraction])
+
+  const getMessageIcon = (type: ConsoleMessage['type']) => {
+    switch (type) {
+      case 'error': return <AlertTriangle className="h-4 w-4 text-red-500" />
+      case 'warn': return <AlertTriangle className="h-4 w-4 text-yellow-500" />
+      case 'info': return <Info className="h-4 w-4 text-blue-500" />
+      case 'success': return <Check className="h-4 w-4 text-green-500" />
+      default: return <Terminal className="h-4 w-4 text-gray-500" />
+    }
+  }
+
+  const getMessageClass = (type: ConsoleMessage['type']) => {
+    switch (type) {
+      case 'error': return 'text-red-700 bg-red-50 dark:text-red-400 dark:bg-red-900/20'
+      case 'warn': return 'text-yellow-700 bg-yellow-50 dark:text-yellow-400 dark:bg-yellow-900/20'
+      case 'info': return 'text-blue-700 bg-blue-50 dark:text-blue-400 dark:bg-blue-900/20'
+      case 'success': return 'text-green-700 bg-green-50 dark:text-green-400 dark:bg-green-900/20'
+      default: return 'text-gray-700 bg-gray-50 dark:text-gray-400 dark:bg-gray-900/20'
+    }
+  }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+    <div className={`space-y-4 ${isFullscreen ? 'fixed inset-0 z-50 bg-white dark:bg-gray-900 p-4' : ''}`}>
       {/* Header */}
-      <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
-            <Play className="h-5 w-5 mr-2" />
-            Enhanced Code Runner
-          </h3>
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => setShowSettings(!showSettings)}
-              className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-              title="Settings"
-            >
-              <Settings className="h-4 w-4" />
-            </button>
-          </div>
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          Code Playground
+        </h3>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => setAutoSave(!autoSave)}
+            className={`p-2 rounded-md transition-colors ${
+              autoSave 
+                ? 'text-green-600 bg-green-100 dark:bg-green-900/20' 
+                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+            }`}
+            title={autoSave ? 'Auto-save enabled' : 'Auto-save disabled'}
+          >
+            <Save className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => setIsFullscreen(!isFullscreen)}
+            className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+            title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+          >
+            {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+          </button>
         </div>
-        
-        {/* Settings Panel */}
-        {showSettings && (
-          <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg space-y-3">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Execution Mode
-              </label>
-              <select
-                value={executionMode}
-                onChange={(e) => setExecutionMode(e.target.value as any)}
-                className="px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-600"
-              >
-                <option value="safe">Safe (Recommended)</option>
-                <option value="strict">Strict</option>
-                <option value="experimental">Experimental</option>
-              </select>
-            </div>
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Auto-run on changes
-              </label>
-              <input
-                type="checkbox"
-                checked={autoRun}
-                onChange={(e) => setAutoRun(e.target.checked)}
-                className="rounded border-gray-300 dark:border-gray-600"
-              />
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Code Editor */}
-      <div className="p-6">
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-2">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Code Editor */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
               JavaScript Code
             </label>
-            <div className="flex items-center space-x-2">
-              <input
-                type="file"
-                accept=".js,.txt"
-                onChange={uploadCode}
-                className="hidden"
-                id="upload-code"
-              />
-              <label
-                htmlFor="upload-code"
-                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer transition-colors"
-                title="Upload code file"
-              >
-                <Upload className="h-4 w-4" />
-              </label>
+            <div className="flex items-center space-x-1">
               <button
-                onClick={downloadCode}
-                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                title="Download code"
+                onClick={formatCode}
+                className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                title="Format code"
               >
-                <Download className="h-4 w-4" />
+                <FileText className="h-4 w-4" />
               </button>
               <button
                 onClick={copyCode}
-                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
                 title="Copy code"
               >
                 <Copy className="h-4 w-4" />
               </button>
+              <button
+                onClick={resetCode}
+                className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                title="Reset code"
+              >
+                <RotateCcw className="h-4 w-4" />
+              </button>
             </div>
           </div>
-          <textarea
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            className="w-full h-64 p-4 font-mono text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none bg-gray-900 dark:bg-gray-950 text-green-400"
-            placeholder="Write your JavaScript code here..."
-            spellCheck={false}
-          />
+          
+          <div className="relative">
+            <textarea
+              ref={textareaRef}
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              className="w-full h-64 p-4 font-mono text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 resize-none"
+              placeholder="// Start coding here..."
+              spellCheck={false}
+            />
+            
+            {/* File Upload */}
+            <input
+              type="file"
+              accept=".js,.ts,.txt"
+              onChange={uploadCode}
+              className="hidden"
+              id="code-upload"
+            />
+            <label
+              htmlFor="code-upload"
+              className="absolute top-2 right-2 p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors cursor-pointer"
+              title="Upload code file"
+            >
+              <Upload className="h-4 w-4" />
+            </label>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={runCode}
+                disabled={isRunning || !code.trim()}
+                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <Play className="h-4 w-4" />
+                <span>{isRunning ? 'Running...' : 'Run Code'}</span>
+              </button>
+              
+              <button
+                onClick={downloadCode}
+                className="flex items-center space-x-2 px-3 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                <Download className="h-4 w-4" />
+                <span>Download</span>
+              </button>
+            </div>
+
+            <div className="text-xs text-gray-500 dark:text-gray-400">
+              {code.length} characters
+            </div>
+          </div>
         </div>
 
-        {/* Controls */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={isRunning ? stopExecution : runCode}
-              disabled={!code.trim()}
-              className={`px-4 py-2 rounded-md font-medium transition-colors flex items-center ${
-                isRunning
-                  ? 'bg-red-600 hover:bg-red-700 text-white'
-                  : 'bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed'
-              }`}
-            >
-              {isRunning ? (
-                <>
-                  <Square className="h-4 w-4 mr-2" />
-                  Stop
-                </>
-              ) : (
-                <>
-                  <Play className="h-4 w-4 mr-2" />
-                  Run Code
-                </>
-              )}
-            </button>
-            <button
-              onClick={resetCode}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 transition-colors flex items-center"
-            >
-              <RotateCcw className="h-4 w-4 mr-2" />
-              Reset
-            </button>
+        {/* Console Output */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Console Output
+            </label>
+            <div className="flex items-center space-x-1">
+              <button
+                onClick={() => setShowConsole(!showConsole)}
+                className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                title={showConsole ? 'Hide console' : 'Show console'}
+              >
+                {showConsole ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+              <button
+                onClick={clearConsole}
+                className="p-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+                title="Clear console"
+              >
+                <RotateCcw className="h-4 w-4" />
+              </button>
+            </div>
           </div>
-          
-          {results.executionTime > 0 && (
-            <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-              <Clock className="h-4 w-4 mr-1" />
-              {results.executionTime.toFixed(2)}ms
+
+          {showConsole && (
+            <div className="h-64 p-4 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg overflow-y-auto">
+              {output.length === 0 ? (
+                <div className="text-center text-gray-500 dark:text-gray-400 py-8">
+                  <Terminal className="h-8 w-8 mx-auto mb-2" />
+                  <p className="text-sm">Console output will appear here</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {output.map((message) => (
+                    <div
+                      key={message.id}
+                      className={`flex items-start space-x-2 p-2 rounded-md ${getMessageClass(message.type)}`}
+                    >
+                      {getMessageIcon(message.type)}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                          {message.timestamp.toLocaleTimeString()}
+                        </div>
+                        <div className="text-sm font-mono">
+                          {message.content.map((item, index) => (
+                            <span key={index}>
+                              {typeof item === 'object' ? JSON.stringify(item, null, 2) : String(item)}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
-
-        {/* Results */}
-        {(results.output.length > 0 || results.errors.length > 0) && (
-          <div className="space-y-4">
-            {/* Output */}
-            {results.output.length > 0 && (
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center">
-                  <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
-                  Output
-                </h4>
-                <div className="p-4 bg-gray-900 dark:bg-gray-950 text-green-400 rounded-md font-mono text-sm overflow-auto max-h-48">
-                  <pre className="whitespace-pre-wrap">{results.output.join('\n')}</pre>
-                </div>
-              </div>
-            )}
-
-            {/* Errors */}
-            {results.errors.length > 0 && (
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center">
-                  <AlertCircle className="h-4 w-4 mr-2 text-red-500" />
-                  Errors
-                </h4>
-                <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-                  <pre className="text-red-700 dark:text-red-300 text-sm whitespace-pre-wrap">
-                    {results.errors.join('\n')}
-                  </pre>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Tips */}
-        <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-          <h4 className="text-sm font-medium text-blue-900 dark:text-blue-100 mb-2">
-            💡 Tips
-          </h4>
-          <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
-            <li>• Use console.log() to see output</li>
-            <li>• Code runs in a safe environment with 5-second timeout</li>
-            <li>• Access to most JavaScript built-in objects and methods</li>
-            <li>• Enable auto-run to see results as you type</li>
-            <li>• Upload .js files or download your code</li>
-          </ul>
-        </div>
       </div>
+
+      {/* Execution History */}
+      {executionHistory.length > 0 && (
+        <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Recent Executions
+          </h4>
+          <div className="space-y-2 max-h-32 overflow-y-auto">
+            {executionHistory.slice(0, 5).map((execution) => (
+              <div
+                key={execution.id}
+                className={`flex items-center justify-between p-2 rounded-md text-sm ${
+                  execution.success 
+                    ? 'bg-green-50 dark:bg-green-900/20' 
+                    : 'bg-red-50 dark:bg-red-900/20'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  {execution.success ? (
+                    <Check className="h-4 w-4 text-green-500" />
+                  ) : (
+                    <AlertTriangle className="h-4 w-4 text-red-500" />
+                  )}
+                  <span className="font-mono">
+                    {execution.code.substring(0, 50)}...
+                  </span>
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  {execution.duration}ms
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

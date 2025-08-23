@@ -22,109 +22,106 @@ export interface JavaScriptObject {
 export interface ObjectCategory {
   name: string
   description: string
-  difficulty: DifficultyLevel
   objects: string[]
-  icon?: string
+  icon: string
+  difficulty: 'beginner' | 'intermediate' | 'advanced'
 }
 
 export const OBJECT_CATEGORIES: Record<string, ObjectCategory> = {
   'Fundamental': {
     name: 'Fundamental',
-    description: 'Core JavaScript building blocks and essential concepts',
+    description: 'Core JavaScript objects and concepts',
+    icon: '🔧',
     difficulty: 'beginner',
-    objects: ['Object', 'Function', 'Boolean', 'Symbol'],
-    icon: '🏗️'
+    objects: ['Object', 'Function', 'Boolean', 'Symbol', 'undefined', 'globalThis']
   },
   'Numbers & Math': {
     name: 'Numbers & Math',
-    description: 'Numeric operations, mathematical calculations, and number handling',
+    description: 'Numeric data types and mathematical operations',
+    icon: '🔢',
     difficulty: 'beginner',
-    objects: ['Number', 'BigInt', 'Math', 'NaN', 'Infinity', 'isFinite()', 'isNaN()', 'parseFloat()', 'parseInt()'],
-    icon: '🔢'
+    objects: ['Number', 'BigInt', 'Math', 'NaN', 'Infinity', 'isFinite()', 'isNaN()', 'parseFloat()', 'parseInt()']
   },
   'Text': {
     name: 'Text',
-    description: 'String manipulation, text processing, and pattern matching',
-    difficulty: 'intermediate',
-    objects: ['String', 'RegExp'],
-    icon: '📝'
+    description: 'String manipulation and text processing',
+    icon: '📝',
+    difficulty: 'beginner',
+    objects: ['String', 'RegExp', 'encodeURI()', 'decodeURI()', 'encodeURIComponent()', 'decodeURIComponent()', 'escape()', 'unescape()']
   },
   'Collections': {
     name: 'Collections',
-    description: 'Data structures, arrays, and collection management',
+    description: 'Data structures and collection types',
+    icon: '📦',
     difficulty: 'intermediate',
-    objects: ['Array', 'Map', 'Set', 'WeakMap', 'WeakSet', 'WeakRef'],
-    icon: '📚'
+    objects: ['Array', 'Map', 'Set', 'WeakMap', 'WeakSet', 'WeakRef']
   },
   'Typed Arrays': {
     name: 'Typed Arrays',
-    description: 'Binary data handling, buffers, and memory management',
+    description: 'Binary data and typed array views',
+    icon: '💾',
     difficulty: 'advanced',
     objects: [
       'ArrayBuffer', 'SharedArrayBuffer', 'DataView', 'TypedArray',
       'Int8Array', 'Uint8Array', 'Uint8ClampedArray', 'Int16Array',
       'Uint16Array', 'Int32Array', 'Uint32Array', 'Float32Array',
       'Float64Array', 'BigInt64Array', 'BigUint64Array', 'Float16Array'
-    ],
-    icon: '💾'
+    ]
   },
   'Errors': {
     name: 'Errors',
-    description: 'Error handling, exception management, and debugging',
+    description: 'Error handling and exception types',
+    icon: '⚠️',
     difficulty: 'intermediate',
     objects: [
       'Error', 'AggregateError', 'EvalError', 'RangeError', 'ReferenceError',
       'SyntaxError', 'TypeError', 'URIError', 'InternalError', 'SuppressedError'
-    ],
-    icon: '⚠️'
+    ]
   },
   'Control Flow': {
     name: 'Control Flow',
-    description: 'Asynchronous programming, promises, and iteration patterns',
+    description: 'Asynchronous programming and iteration',
+    icon: '🔄',
     difficulty: 'advanced',
     objects: [
       'Promise', 'AsyncFunction', 'Generator', 'GeneratorFunction',
       'AsyncGenerator', 'AsyncGeneratorFunction', 'Iterator', 'AsyncIterator'
-    ],
-    icon: '🔄'
+    ]
   },
   'Memory Management': {
     name: 'Memory Management',
-    description: 'Resource cleanup, garbage collection, and memory optimization',
+    description: 'Resource management and cleanup',
+    icon: '🧹',
     difficulty: 'advanced',
-    objects: ['FinalizationRegistry', 'DisposableStack', 'AsyncDisposableStack'],
-    icon: '🧹'
+    objects: ['FinalizationRegistry', 'DisposableStack', 'AsyncDisposableStack']
   },
   'Meta Programming': {
     name: 'Meta Programming',
-    description: 'Dynamic code manipulation, proxies, and reflection',
+    description: 'Advanced object manipulation and reflection',
+    icon: '🔮',
     difficulty: 'advanced',
-    objects: ['Proxy', 'Reflect'],
-    icon: '🪞'
+    objects: ['Proxy', 'Reflect']
   },
   'Internationalization': {
     name: 'Internationalization',
-    description: 'Localization, date/time handling, and regional formatting',
+    description: 'Date, time, and locale handling',
+    icon: '🌍',
     difficulty: 'intermediate',
-    objects: ['Intl', 'Date', 'Temporal'],
-    icon: '🌍'
+    objects: ['Intl', 'Date', 'Temporal']
   },
   'Data Processing': {
     name: 'Data Processing',
-    description: 'Data serialization, atomic operations, and parsing',
+    description: 'Data serialization and atomic operations',
+    icon: '⚡',
     difficulty: 'intermediate',
-    objects: ['JSON', 'Atomics'],
-    icon: '⚡'
+    objects: ['JSON', 'Atomics']
   },
   'Global Functions': {
     name: 'Global Functions',
-    description: 'Global utility functions and environment variables',
+    description: 'Built-in global functions and utilities',
+    icon: '🌐',
     difficulty: 'beginner',
-    objects: [
-      'globalThis', 'eval()', 'decodeURI()', 'decodeURIComponent()',
-      'encodeURI()', 'encodeURIComponent()', 'escape()', 'unescape()', 'undefined'
-    ],
-    icon: '🌐'
+    objects: ['eval()']
   }
 }
 
@@ -231,55 +228,57 @@ export const JAVASCRIPT_OBJECTS: JavaScriptObject[] = [
 ]
 
 // Helper functions
-export const getAllObjects = (): string[] => {
+export function getAllObjects(): string[] {
   return Object.values(OBJECT_CATEGORIES).flatMap(category => category.objects)
 }
 
-export const getObjectsByCategory = (categoryName: string): string[] => {
-  return OBJECT_CATEGORIES[categoryName]?.objects || []
-}
-
-export const getCategoryByObject = (objectName: string): string | undefined => {
-  for (const [categoryName, category] of Object.entries(OBJECT_CATEGORIES)) {
+export function getObjectCategory(objectName: string): ObjectCategory | null {
+  for (const category of Object.values(OBJECT_CATEGORIES)) {
     if (category.objects.includes(objectName)) {
-      return categoryName
+      return category
     }
   }
-  return undefined
+  return null
 }
 
-export const getObjectDifficulty = (objectName: string): DifficultyLevel => {
-  const category = getCategoryByObject(objectName)
-  return category ? OBJECT_CATEGORIES[category].difficulty : 'beginner'
-}
-
-export const getTotalObjectsCount = (): number => {
-  return getAllObjects().length
-}
-
-export const getObjectsByDifficulty = (difficulty: DifficultyLevel): string[] => {
+export function getObjectsByDifficulty(difficulty: 'beginner' | 'intermediate' | 'advanced'): string[] {
   return Object.values(OBJECT_CATEGORIES)
     .filter(category => category.difficulty === difficulty)
     .flatMap(category => category.objects)
 }
 
-export const getObjectTags = (objectName: string): string[] => {
+export function searchObjectsInCategory(categoryName: string, searchTerm: string): string[] {
+  const category = OBJECT_CATEGORIES[categoryName]
+  if (!category) return []
+  
+  return category.objects.filter(obj => 
+    obj.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+}
+
+export function getTotalObjectsCount(): number {
+  return getAllObjects().length
+}
+
+export function getObjectTags(objectName: string): string[] {
   return OBJECT_TAGS[objectName] || []
 }
 
-export const searchObjects = (query: string): string[] => {
-  const allObjects = getAllObjects()
-  const queryLower = query.toLowerCase()
+export function getCategoryByObject(objectName: string): string {
+  for (const [categoryName, category] of Object.entries(OBJECT_CATEGORIES)) {
+    if (category.objects.includes(objectName)) {
+      return categoryName
+    }
+  }
+  return 'Unknown'
+}
+
+export function getRelatedObjects(objectName: string, limit: number = 5): string[] {
+  const category = getCategoryByObject(objectName)
+  const categoryObj = OBJECT_CATEGORIES[category]
+  if (!categoryObj) return []
   
-  return allObjects.filter(obj => {
-    const objectLower = obj.toLowerCase()
-    const tags = getObjectTags(obj)
-    const category = getCategoryByObject(obj)
-    
-    return (
-      objectLower.includes(queryLower) ||
-      tags.some(tag => tag.toLowerCase().includes(queryLower)) ||
-      (category && category.toLowerCase().includes(queryLower))
-    )
-  })
+  return categoryObj.objects
+    .filter(obj => obj !== objectName)
+    .slice(0, limit)
 }

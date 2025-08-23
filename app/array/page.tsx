@@ -257,6 +257,9 @@ function convertArguments() {
   return args.map(x => x * 2);
 }
 console.log(convertArguments(1, 2, 3)); // [2, 4, 6]`}
+      complexity="beginner"
+      relatedObjects={['Object', 'String', 'Number', 'Set', 'Map']}
+      browserSupport="Array is supported in all JavaScript environments and browsers."
       useCases={[
         "Data collections and lists management",
         "Iterating and transforming data sequences",
@@ -266,6 +269,32 @@ console.log(convertArguments(1, 2, 3)); // [2, 4, 6]`}
         "Sorting and searching operations",
         "Data aggregation and grouping",
         "Temporary data storage and manipulation"
+      ]}
+      examples={[
+        {
+          id: "array-transformation-pipeline",
+          title: "Array Transformation Pipeline",
+          description: "Chain multiple array methods to transform data efficiently",
+          difficulty: 'intermediate',
+          tags: ['functional', 'transformation', 'chaining'],
+          code: `const sales = [\n  { product: 'Laptop', price: 999, quantity: 2, category: 'Electronics' },\n  { product: 'Mouse', price: 25, quantity: 10, category: 'Electronics' },\n  { product: 'Book', price: 15, quantity: 5, category: 'Education' },\n  { product: 'Desk', price: 200, quantity: 1, category: 'Furniture' }\n]\n\n// Transform data pipeline: filter > map > reduce\nconst result = sales\n  .filter(item => item.category === 'Electronics')  // Only electronics\n  .map(item => ({\n    ...item,\n    total: item.price * item.quantity,\n    discounted: item.price * item.quantity * 0.9\n  }))\n  .reduce((acc, item) => {\n    acc.totalSales += item.total\n    acc.discountedSales += item.discounted\n    acc.items.push(item)\n    return acc\n  }, { totalSales: 0, discountedSales: 0, items: [] })\n\nconsole.log(result)\n// { totalSales: 2248, discountedSales: 2023.2, items: [...] }`
+        },
+        {
+          id: "array-sorting-grouping",
+          title: "Advanced Array Sorting and Grouping",
+          description: "Sort arrays by multiple criteria and group data dynamically",
+          difficulty: 'advanced',
+          tags: ['sorting', 'grouping', 'algorithms'],
+          code: `const employees = [\n  { name: 'Alice', department: 'Engineering', salary: 90000, experience: 3 },\n  { name: 'Bob', department: 'Marketing', salary: 65000, experience: 2 },\n  { name: 'Charlie', department: 'Engineering', salary: 85000, experience: 5 },\n  { name: 'Diana', department: 'Marketing', salary: 70000, experience: 4 }\n]\n\n// Multi-criteria sorting: department (asc), then salary (desc)\nconst sorted = employees.toSorted((a, b) => {\n  if (a.department !== b.department) {\n    return a.department.localeCompare(b.department)\n  }\n  return b.salary - a.salary\n})\n\n// Group by department using reduce\nconst grouped = employees.reduce((groups, emp) => {\n  const dept = emp.department\n  if (!groups[dept]) {\n    groups[dept] = []\n  }\n  groups[dept].push(emp)\n  return groups\n}, {})\n\nconsole.log('Sorted:', sorted)\nconsole.log('Grouped:', grouped)`
+        },
+        {
+          id: "array-performance-optimization",
+          title: "Array Performance Optimization",
+          description: "Optimize array operations for large datasets and performance",
+          difficulty: 'advanced',
+          tags: ['performance', 'optimization', 'large-data'],
+          code: `// Performance comparison: for-loop vs array methods\nconst largeArray = Array.from({ length: 1000000 }, (_, i) => i)\n\n// Fast: Traditional for loop\nfunction sumWithLoop(arr) {\n  let sum = 0\n  for (let i = 0; i < arr.length; i++) {\n    sum += arr[i]\n  }\n  return sum\n}\n\n// Slower but readable: Array.reduce\nfunction sumWithReduce(arr) {\n  return arr.reduce((sum, num) => sum + num, 0)\n}\n\n// Memory-efficient: process in chunks\nfunction processInChunks(arr, chunkSize, processor) {\n  const results = []\n  for (let i = 0; i < arr.length; i += chunkSize) {\n    const chunk = arr.slice(i, i + chunkSize)\n    results.push(processor(chunk))\n  }\n  return results\n}\n\n// Use case: process 1M items in chunks of 10k\nconst chunkResults = processInChunks(\n  largeArray, \n  10000, \n  chunk => chunk.reduce((sum, n) => sum + n, 0)\n)\n\nconsole.log('Chunk sums:', chunkResults.slice(0, 3)) // First 3 chunks`
+        }
       ]}
     />
   )

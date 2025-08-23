@@ -661,6 +661,9 @@ for (const num of numbers) {
   sum += num;
 }
 console.timeEnd('pre-convert');`}
+      complexity="beginner"
+      relatedObjects={['Math', 'BigInt', 'String', 'parseInt', 'parseFloat']}
+      browserSupport="Number is supported in all JavaScript environments and browsers."
       useCases={[
         "Numeric calculations and arithmetic",
         "Currency and financial calculations", 
@@ -677,6 +680,32 @@ console.timeEnd('pre-convert');`}
         "Binary and hexadecimal operations",
         "Safe integer operations",
         "Floating point precision handling"
+      ]}
+      examples={[
+        {
+          id: "number-validation-parsing",
+          title: "Number Validation and Parsing",
+          description: "Validate and parse various numeric inputs safely",
+          difficulty: 'intermediate',
+          tags: ['validation', 'parsing', 'error-handling'],
+          code: `// Comprehensive number validation function\nfunction validateAndParseNumber(input, options = {}) {\n  const { allowFloat = true, min = -Infinity, max = Infinity } = options\n  \n  // Convert to number\n  const num = Number(input)\n  \n  // Check if it's a valid number\n  if (Number.isNaN(num)) {\n    throw new Error('Invalid number')\n  }\n  \n  // Check if integer is required\n  if (!allowFloat && !Number.isInteger(num)) {\n    throw new Error('Integer required')\n  }\n  \n  // Check range\n  if (num < min || num > max) {\n    throw new Error(\`Number must be between \${min} and \${max}\`)\n  }\n  \n  return num\n}\n\nconsole.log(validateAndParseNumber('42.5'))     // 42.5\nconsole.log(validateAndParseNumber('42.5', { allowFloat: false })) // Error\nconsole.log(validateAndParseNumber('100', { min: 0, max: 50 }))    // Error`
+        },
+        {
+          id: "currency-formatting-locales",
+          title: "Currency Formatting with Locales",
+          description: "Format numbers as currency for different locales and regions",
+          difficulty: 'beginner',
+          tags: ['formatting', 'currency', 'locales', 'i18n'],
+          code: `const price = 1234.56\n\n// US Dollar\nconsole.log(price.toLocaleString('en-US', {\n  style: 'currency',\n  currency: 'USD'\n})) // $1,234.56\n\n// Euro (German)\nconsole.log(price.toLocaleString('de-DE', {\n  style: 'currency',\n  currency: 'EUR'\n})) // 1.234,56 €\n\n// Japanese Yen\nconsole.log(price.toLocaleString('ja-JP', {\n  style: 'currency',\n  currency: 'JPY'\n})) // ¥1,235\n\n// Percentage\nconst rate = 0.0875\nconsole.log(rate.toLocaleString('en-US', {\n  style: 'percent',\n  minimumFractionDigits: 2\n})) // 8.75%`
+        },
+        {
+          id: "safe-floating-point-operations",
+          title: "Safe Floating Point Operations",
+          description: "Handle floating point precision issues in calculations",
+          difficulty: 'advanced',
+          tags: ['precision', 'floating-point', 'mathematics', 'edge-cases'],
+          code: `// The infamous floating point problem\nconsole.log(0.1 + 0.2)         // 0.30000000000000004\nconsole.log(0.1 + 0.2 === 0.3) // false\n\n// Safe comparison using epsilon\nfunction almostEqual(a, b, epsilon = Number.EPSILON) {\n  return Math.abs(a - b) < epsilon\n}\n\nconsole.log(almostEqual(0.1 + 0.2, 0.3)) // true\n\n// Safe rounding for currency\nfunction currencyRound(amount) {\n  return Math.round((amount + Number.EPSILON) * 100) / 100\n}\n\nconsole.log(currencyRound(0.1 + 0.2))  // 0.3\nconsole.log(currencyRound(1.005))      // 1.01\n\n// Safe arithmetic operations\nclass SafeMath {\n  static add(a, b) {\n    return currencyRound(a + b)\n  }\n  \n  static multiply(a, b) {\n    return currencyRound(a * b)\n  }\n}\n\nconsole.log(SafeMath.add(0.1, 0.2))      // 0.3\nconsole.log(SafeMath.multiply(19.99, 1.08)) // 21.59`
+        }
       ]}
     />
   )

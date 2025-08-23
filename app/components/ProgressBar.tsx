@@ -4,8 +4,11 @@ import { useMemo } from 'react'
 import { useApp } from '../contexts/AppContext'
 import { Target, Trophy, TrendingUp, Calendar, Award, Star } from 'lucide-react'
 import { OBJECT_CATEGORIES, getObjectsByDifficulty } from '../constants/objects'
+import Card from './shared/Card'
+import Badge from './shared/Badge'
+import ProgressBar from './shared/ProgressBar'
 
-export default function ProgressBar() {
+export default function LearningProgressDashboard() {
   const { getProgress, visitedObjects, favorites, getBatchProgress } = useApp()
   const progress = getProgress()
 
@@ -65,17 +68,20 @@ export default function ProgressBar() {
   const achievement = getAchievementLevel(progress.percentage)
 
   return (
-    <div className="space-y-6">
+    <Card className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
           <Target className="h-5 w-5 mr-2" />
           Learning Progress
         </h3>
-        <div className={`flex items-center px-3 py-1.5 rounded-full text-xs font-medium ${achievement.bg} ${achievement.color}`}>
+        <Badge 
+          variant={achievement.level === 'Master' ? 'error' : achievement.level === 'Expert' ? 'warning' : achievement.level === 'Scholar' ? 'info' : 'success'}
+          className="flex items-center"
+        >
           <achievement.icon className="h-3 w-3 mr-1" />
           {achievement.level}
-        </div>
+        </Badge>
       </div>
 
       {/* Overall Progress */}
@@ -88,12 +94,12 @@ export default function ProgressBar() {
             {progress.percentage}% ({progress.visited}/{progress.total})
           </span>
         </div>
-        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
-          <div
-            className={`h-3 rounded-full bg-gradient-to-r ${getProgressColor(progress.percentage)} transition-all duration-500 ease-out`}
-            style={{ width: `${progress.percentage}%` }}
-          />
-        </div>
+        <ProgressBar 
+          value={progress.percentage} 
+          variant={progress.percentage >= 80 ? 'success' : progress.percentage >= 60 ? 'warning' : 'error'}
+          size="lg"
+          animated={progress.percentage < 100}
+        />
       </div>
 
       {/* Progress Message with Streak */}
@@ -200,6 +206,6 @@ export default function ProgressBar() {
             ))}
         </div>
       </div>
-    </div>
+    </Card>
   )
 }

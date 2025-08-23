@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useMemo, useEffect } from 'react'
-import { BookOpen, CheckCircle, Circle, Lock, Star, TrendingUp, Target, Zap, Award, ChevronRight, ChevronDown, Play, Clock, BarChart3 } from 'lucide-react'
+import { BookOpen, CheckCircle, Circle, Lock, Target, Zap, Award, ChevronRight, Play } from 'lucide-react'
 import { useApp } from '../contexts/AppContext'
 
 interface LearningModule {
@@ -292,7 +292,7 @@ export default function LearningPath() {
   const [selectedPath, setSelectedPath] = useState<string>('fundamentals')
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set())
   const [userProgress, setUserProgress] = useState<Record<string, any>>({})
-  const [showCertificates, setShowCertificates] = useState(false)
+
 
   // Load progress from localStorage
   useEffect(() => {
@@ -331,7 +331,7 @@ export default function LearningPath() {
           ...module,
           isCompleted: isCompleted || objectsVisited,
           isUnlocked,
-          completionDate: moduleProgress.completionDate ? new Date(moduleProgress.completionDate) : undefined,
+          ...(moduleProgress.completionDate && { completionDate: new Date(moduleProgress.completionDate) }),
           score: moduleProgress.score || 0,
           exercises: module.exercises.map(exercise => ({
             ...exercise,
@@ -605,7 +605,7 @@ export default function LearningPath() {
               <div className="space-y-4">
                 {currentPath.modules.map((module, index) => {
                   const isExpanded = expandedModules.has(module.id)
-                  const completedExercises = module.exercises.filter(e => e.isCompleted).length
+                  const completedExercises = module.exercises.filter((e: any) => e.isCompleted).length
                   
                   return (
                     <div
@@ -697,7 +697,7 @@ export default function LearningPath() {
                               Learning Objectives
                             </h4>
                             <ul className="space-y-1">
-                              {module.objectives.map((objective, idx) => (
+                              {module.objectives.map((objective: string, idx: number) => (
                                 <li key={idx} className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                                   <Target className="h-3 w-3 mr-2 text-blue-500" />
                                   {objective}
@@ -712,7 +712,7 @@ export default function LearningPath() {
                               JavaScript Objects Covered
                             </h4>
                             <div className="flex flex-wrap gap-2">
-                              {module.objects.map(objectName => (
+                              {module.objects.map((objectName: string) => (
                                 <span
                                   key={objectName}
                                   className={`px-2 py-1 rounded text-xs font-medium ${
@@ -733,7 +733,7 @@ export default function LearningPath() {
                               Exercises ({completedExercises}/{module.exercises.length})
                             </h4>
                             <div className="space-y-2">
-                              {module.exercises.map((exercise) => (
+                              {module.exercises.map((exercise: any) => (
                                 <div
                                   key={exercise.id}
                                   className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700"

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
-import { Play, Square, RotateCcw, Download, Upload, Share2, Settings, Terminal, Eye, EyeOff, Maximize2, Minimize2, Copy, Check, AlertTriangle, Info, Lightbulb, BookOpen, Code, Cpu, Zap, Target, Trophy } from 'lucide-react'
+import { Play, Square, RotateCcw, Download, Share2, Terminal, Eye, EyeOff, Maximize2, Minimize2, Lightbulb, Zap, Target, Trophy } from 'lucide-react'
 
 interface CodeExecution {
   id: string

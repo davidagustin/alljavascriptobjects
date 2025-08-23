@@ -2,352 +2,271 @@
  * Performance monitoring and analytics utilities
  */
 
-export interface PerformanceMetric {
-  name: string
-  value: number
-  timestamp: number
-  tags?: Record<string, string>
-}
-
-export interface UserInteraction {
-  action: string
+interface InteractionEvent {
+  type: string
   target: string
+  metadata: Record<string, any>
   timestamp: number
-  duration?: number
-  metadata?: Record<string, any>
+  sessionId: string
 }
 
-class PerformanceMonitor {
-  private metrics: PerformanceMetric[] = []
-  private interactions: UserInteraction[] = []
-  private observers: PerformanceObserver[] = []
+interface PerformanceMetrics {
+  pageLoadTime: number
+  interactionCount: number
+  sessionDuration: number
+  objectsViewed: string[]
+  searchQueries: string[]
+}
+
+class PerformanceTracker {
+  private events: InteractionEvent[] = []
+  private sessionId: string
+  private sessionStart: number
+  private pageLoadStart: number
 
   constructor() {
-    this.initializeObservers()
-  }
-
-  private initializeObservers() {
-    // Observe Core Web Vitals
-    if (typeof window !== 'undefined' && 'PerformanceObserver' in window) {
-      try {
-        // Largest Contentful Paint (LCP)
-        const lcpObserver = new PerformanceObserver((list) => {
-          const entries = list.getEntries()
-          const lastEntry = entries[entries.length - 1] as any
-          this.recordMetric('LCP', lastEntry.startTime)
-        })
-        lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] })
-        this.observers.push(lcpObserver)
-
-        // First Input Delay (FID)
-        const fidObserver = new PerformanceObserver((list) => {
-          list.getEntries().forEach((entry: any) => {
-            this.recordMetric('FID', entry.processingStart - entry.startTime)
-          })
-        })
-        fidObserver.observe({ entryTypes: ['first-input'] })
-        this.observers.push(fidObserver)
-
-        // Cumulative Layout Shift (CLS)
-        let clsValue = 0
-        const clsObserver = new PerformanceObserver((list) => {
-          list.getEntries().forEach((entry: any) => {
-            if (!entry.hadRecentInput) {
-              clsValue += entry.value
-            }
-          })
-          this.recordMetric('CLS', clsValue)
-        })
-        clsObserver.observe({ entryTypes: ['layout-shift'] })
-        this.observers.push(clsObserver)
-
-        // Long Tasks
-        const longTaskObserver = new PerformanceObserver((list) => {
-          list.getEntries().forEach((entry) => {
-            this.recordMetric('LongTask', entry.duration, {
-              name: entry.name,
-              entryType: entry.entryType
-            })
-          })
-        })
-        longTaskObserver.observe({ entryTypes: ['longtask'] })
-        this.observers.push(longTaskObserver)
-
-      } catch (error) {
-        console.warn('Performance monitoring setup failed:', error)
-      }
-    }
-  }
-
-  recordMetric(name: string, value: number, tags?: Record<string, string>) {
-    const metric: PerformanceMetric = {
-      name,
-      value,
-      timestamp: Date.now(),
-      tags
-    }
+    this.sessionId = this.generateSessionId()
+    this.sessionStart = Date.now()
+    this.pageLoadStart = typeof window !== 'undefined' ? performance.now() : 0
     
-    this.metrics.push(metric)
-    
-    // Keep only last 100 metrics to avoid memory issues
-    if (this.metrics.length > 100) {
-      this.metrics = this.metrics.slice(-100)
+    // Track page load time only on client side
+    if (typeof window !== 'undefined') {
+      window.addEventListener('load', () => {
+        const loadTime = performance.now() - this.pageLoadStart
+        this.trackEvent('page_load', 'app', { loadTime })
+      })
     }
   }
 
-  recordInteraction(action: string, target: string, metadata?: Record<string, any>) {
-    const interaction: UserInteraction = {
-      action,
+  private generateSessionId(): string {
+    return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+  }
+
+  trackEvent(type: string, target: string, metadata: Record<string, any> = {}): void {
+    const event: InteractionEvent = {
+      type,
       target,
+      metadata,
       timestamp: Date.now(),
-      metadata
+      sessionId: this.sessionId
     }
     
-    this.interactions.push(interaction)
+    this.events.push(event)
     
-    // Keep only last 50 interactions
-    if (this.interactions.length > 50) {
-      this.interactions = this.interactions.slice(-50)
+    // Keep only last 100 events to prevent memory issues
+    if (this.events.length > 100) {
+      this.events = this.events.slice(-100)
     }
-  }
-
-  startTimer(name: string): () => void {
-    const startTime = performance.now()
     
-    return () => {
-      const duration = performance.now() - startTime
-      this.recordMetric(name, duration, { type: 'timer' })
+    // Log to console in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Performance Event:', event)
     }
   }
 
-  measureFunction<T extends (...args: any[]) => any>(
-    fn: T,
-    name: string
-  ): (...args: Parameters<T>) => ReturnType<T> {
-    return (...args: Parameters<T>): ReturnType<T> => {
-      const stopTimer = this.startTimer(name)
-      try {
-        const result = fn(...args)
-        
-        // Handle async functions
-        if (result && typeof result.then === 'function') {
-          return result.finally(stopTimer) as ReturnType<T>
-        } else {
-          stopTimer()
-          return result
-        }
-      } catch (error) {
-        stopTimer()
-        this.recordMetric(`${name}_error`, 1, { error: String(error) })
-        throw error
-      }
-    }
-  }
-
-  getMetrics(name?: string): PerformanceMetric[] {
-    if (name) {
-      return this.metrics.filter(metric => metric.name === name)
-    }
-    return [...this.metrics]
-  }
-
-  getInteractions(action?: string): UserInteraction[] {
-    if (action) {
-      return this.interactions.filter(interaction => interaction.action === action)
-    }
-    return [...this.interactions]
-  }
-
-  getAverageMetric(name: string): number | null {
-    const metrics = this.getMetrics(name)
-    if (metrics.length === 0) return null
+  getMetrics(): PerformanceMetrics {
+    const sessionDuration = Date.now() - this.sessionStart
+    const pageLoadEvent = this.events.find(e => e.type === 'page_load')
+    const pageLoadTime = pageLoadEvent?.metadata?.loadTime || 0
     
-    const sum = metrics.reduce((acc, metric) => acc + metric.value, 0)
-    return sum / metrics.length
-  }
-
-  getPercentile(name: string, percentile: number): number | null {
-    const metrics = this.getMetrics(name)
-    if (metrics.length === 0) return null
+    const objectsViewed = this.events
+      .filter(e => e.type === 'object_select')
+      .map(e => e.target)
     
-    const values = metrics.map(m => m.value).sort((a, b) => a - b)
-    const index = Math.floor((percentile / 100) * values.length)
-    return values[Math.min(index, values.length - 1)]
-  }
-
-  getPerformanceReport(): {
-    coreWebVitals: Record<string, number | null>
-    customMetrics: Record<string, { avg: number; p95: number; count: number }>
-    userInteractions: Record<string, number>
-  } {
-    const coreWebVitals = {
-      LCP: this.getAverageMetric('LCP'),
-      FID: this.getAverageMetric('FID'),
-      CLS: this.getAverageMetric('CLS')
-    }
-
-    const customMetricsNames = [...new Set(this.metrics.map(m => m.name))]
-      .filter(name => !['LCP', 'FID', 'CLS'].includes(name))
-
-    const customMetrics: Record<string, { avg: number; p95: number; count: number }> = {}
+    const searchQueries = this.events
+      .filter(e => e.type === 'search')
+      .map(e => e.target)
     
-    customMetricsNames.forEach(name => {
-      const metrics = this.getMetrics(name)
-      customMetrics[name] = {
-        avg: this.getAverageMetric(name) || 0,
-        p95: this.getPercentile(name, 95) || 0,
-        count: metrics.length
-      }
-    })
-
-    const interactionCounts: Record<string, number> = {}
-    this.interactions.forEach(interaction => {
-      interactionCounts[interaction.action] = (interactionCounts[interaction.action] || 0) + 1
-    })
-
     return {
-      coreWebVitals,
-      customMetrics,
-      userInteractions: interactionCounts
+      pageLoadTime,
+      interactionCount: this.events.length,
+      sessionDuration,
+      objectsViewed: [...new Set(objectsViewed)],
+      searchQueries: [...new Set(searchQueries)]
     }
   }
 
   exportData(): string {
     return JSON.stringify({
-      metrics: this.metrics,
-      interactions: this.interactions,
-      timestamp: Date.now(),
-      url: typeof window !== 'undefined' ? window.location.href : 'unknown'
-    }, null, 2)
-  }
-
-  clear() {
-    this.metrics = []
-    this.interactions = []
-  }
-
-  disconnect() {
-    this.observers.forEach(observer => {
-      try {
-        observer.disconnect()
-      } catch (error) {
-        console.warn('Error disconnecting performance observer:', error)
-      }
+      sessionId: this.sessionId,
+      events: this.events,
+      metrics: this.getMetrics()
     })
-    this.observers = []
+  }
+
+  clear(): void {
+    this.events = []
   }
 }
 
-// Global instance
-export const performanceMonitor = new PerformanceMonitor()
+// Global performance tracker instance - only on client side
+const performanceTracker = typeof window !== 'undefined' ? new PerformanceTracker() : null
 
-/**
- * Hook for React components to track interactions
- */
 export function usePerformanceTracking() {
-  const trackInteraction = (action: string, target: string, metadata?: Record<string, any>) => {
-    performanceMonitor.recordInteraction(action, target, metadata)
+  const trackInteraction = (type: string, target: string, metadata?: Record<string, any>) => {
+    if (performanceTracker) {
+      performanceTracker.trackEvent(type, target, metadata)
+    }
   }
 
-  const trackMetric = (name: string, value: number, tags?: Record<string, string>) => {
-    performanceMonitor.recordMetric(name, value, tags)
+  const getMetrics = () => {
+    return performanceTracker ? performanceTracker.getMetrics() : {
+      pageLoadTime: 0,
+      interactionCount: 0,
+      sessionDuration: 0,
+      objectsViewed: [],
+      searchQueries: []
+    }
   }
 
-  const measureAsync = async <T>(
-    promise: Promise<T>,
-    name: string
-  ): Promise<T> => {
-    const stopTimer = performanceMonitor.startTimer(name)
+  const exportData = () => {
+    return performanceTracker ? performanceTracker.exportData() : '{}'
+  }
+
+  const clearData = () => {
+    if (performanceTracker) {
+      performanceTracker.clear()
+    }
+  }
+
+  const measureAsync = async <T>(promise: Promise<T>, name: string): Promise<T> => {
+    if (typeof performance === 'undefined') {
+      return await promise
+    }
+    
+    const start = performance.now()
     try {
       const result = await promise
-      stopTimer()
+      const duration = performance.now() - start
+      
+      if (performanceTracker) {
+        performanceTracker.trackEvent('async_measurement', name, { duration, success: true })
+      }
+      
       return result
     } catch (error) {
-      stopTimer()
-      performanceMonitor.recordMetric(`${name}_error`, 1, { error: String(error) })
+      const duration = performance.now() - start
+      
+      if (performanceTracker) {
+        performanceTracker.trackEvent('async_measurement', name, { duration, success: false, error: String(error) })
+      }
+      
       throw error
     }
   }
 
   return {
     trackInteraction,
-    trackMetric,
-    measureAsync,
-    getReport: () => performanceMonitor.getPerformanceReport(),
-    exportData: () => performanceMonitor.exportData()
+    getMetrics,
+    exportData,
+    clearData,
+    measureAsync
   }
 }
 
-/**
- * Decorator for measuring function performance
- */
-export function measure(name: string) {
-  return function <T extends (...args: any[]) => any>(
-    target: any,
-    propertyName: string,
-    descriptor: TypedPropertyDescriptor<T>
-  ) {
-    const method = descriptor.value!
-    descriptor.value = performanceMonitor.measureFunction(method, name) as T
+// Track common user interactions
+export function trackPageView(pageName: string) {
+  if (performanceTracker) {
+    performanceTracker.trackEvent('page_view', pageName)
   }
 }
 
-/**
- * Utility functions for common performance measurements
- */
-export const performanceUtils = {
-  measurePageLoad: () => {
-    if (typeof window !== 'undefined' && window.performance) {
-      const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming
-      
-      performanceMonitor.recordMetric('DNS_Lookup', navigation.domainLookupEnd - navigation.domainLookupStart)
-      performanceMonitor.recordMetric('TCP_Connect', navigation.connectEnd - navigation.connectStart)
-      performanceMonitor.recordMetric('Request_Response', navigation.responseEnd - navigation.requestStart)
-      performanceMonitor.recordMetric('DOM_Parse', navigation.domContentLoadedEventEnd - navigation.domContentLoadedEventStart)
-      performanceMonitor.recordMetric('Full_Load', navigation.loadEventEnd - navigation.loadEventStart)
-    }
-  },
-
-  measureMemoryUsage: () => {
-    if (typeof window !== 'undefined' && 'memory' in performance) {
-      const memory = (performance as any).memory
-      performanceMonitor.recordMetric('Memory_Used', memory.usedJSHeapSize)
-      performanceMonitor.recordMetric('Memory_Total', memory.totalJSHeapSize)
-      performanceMonitor.recordMetric('Memory_Limit', memory.jsHeapSizeLimit)
-    }
-  },
-
-  measureBundleSize: async (bundleName: string) => {
-    if (typeof window !== 'undefined' && 'PerformanceObserver' in window) {
-      const observer = new PerformanceObserver((list) => {
-        list.getEntries().forEach((entry) => {
-          if (entry.name.includes(bundleName)) {
-            performanceMonitor.recordMetric(`Bundle_${bundleName}`, entry.transferSize || 0)
-          }
-        })
-      })
-      observer.observe({ entryTypes: ['resource'] })
-    }
+export function trackObjectView(objectName: string, category?: string) {
+  if (performanceTracker) {
+    performanceTracker.trackEvent('object_view', objectName, { category })
   }
 }
 
-// Auto-initialize performance tracking
-if (typeof window !== 'undefined') {
-  // Measure initial page load
-  window.addEventListener('load', () => {
-    setTimeout(() => {
-      performanceUtils.measurePageLoad()
-      performanceUtils.measureMemoryUsage()
-    }, 1000)
-  })
+export function trackSearch(query: string, resultsCount: number) {
+  if (performanceTracker) {
+    performanceTracker.trackEvent('search', query, { resultsCount })
+  }
+}
 
-  // Measure memory usage periodically
-  setInterval(() => {
-    performanceUtils.measureMemoryUsage()
-  }, 30000) // Every 30 seconds
+export function trackFavorite(objectName: string, action: 'add' | 'remove') {
+  if (performanceTracker) {
+    performanceTracker.trackEvent('favorite', objectName, { action })
+  }
+}
 
-  // Clean up on page unload
-  window.addEventListener('beforeunload', () => {
-    performanceMonitor.disconnect()
-  })
+export function trackCodeExecution(objectName: string, success: boolean) {
+  if (performanceTracker) {
+    performanceTracker.trackEvent('code_execution', objectName, { success })
+  }
+}
+
+export function trackQuizCompletion(score: number, totalQuestions: number) {
+  if (performanceTracker) {
+    performanceTracker.trackEvent('quiz_completion', 'quiz', { 
+      score, 
+      totalQuestions, 
+      percentage: Math.round((score / totalQuestions) * 100) 
+    })
+  }
+}
+
+// Performance monitoring utilities
+export function measureFunctionExecution<T>(fn: () => T, name: string): T {
+  if (typeof performance === 'undefined') {
+    return fn()
+  }
+  
+  const start = performance.now()
+  const result = fn()
+  const duration = performance.now() - start
+  
+  if (performanceTracker) {
+    performanceTracker.trackEvent('function_execution', name, { duration })
+  }
+  
+  return result
+}
+
+export async function measureAsyncFunctionExecution<T>(
+  fn: () => Promise<T>, 
+  name: string
+): Promise<T> {
+  if (typeof performance === 'undefined') {
+    return await fn()
+  }
+  
+  const start = performance.now()
+  const result = await fn()
+  const duration = performance.now() - start
+  
+  if (performanceTracker) {
+    performanceTracker.trackEvent('async_function_execution', name, { duration })
+  }
+  
+  return result
+}
+
+// Memory usage tracking
+export function trackMemoryUsage(): void {
+  if ('memory' in performance) {
+    const memory = (performance as any).memory
+    performanceTracker.trackEvent('memory_usage', 'system', {
+      usedJSHeapSize: memory.usedJSHeapSize,
+      totalJSHeapSize: memory.totalJSHeapSize,
+      jsHeapSizeLimit: memory.jsHeapSizeLimit
+    })
+  }
+}
+
+// Network performance tracking
+export function trackNetworkRequest(url: string, duration: number, status: number) {
+  if (performanceTracker) {
+    performanceTracker.trackEvent('network_request', url, { duration, status })
+  }
+}
+
+// Error tracking
+export function trackError(error: Error, context?: string) {
+  if (performanceTracker) {
+    performanceTracker.trackEvent('error', error.name, {
+      message: error.message,
+      stack: error.stack,
+      context
+    })
+  }
 }

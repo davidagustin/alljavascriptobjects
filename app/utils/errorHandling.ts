@@ -1,404 +1,418 @@
-import { ERROR_MESSAGES } from './constants'
+/**
+ * Safe code execution and error handling utilities
+ */
 
-export interface CodeExecutionError {
-  type: 'syntax' | 'runtime' | 'timeout' | 'security' | 'memory'
-  message: string
-  line?: number
-  column?: number
-  stack?: string
-  suggestions?: string[]
+export interface CodeExecutionResult {
+  result: unknown
+  consoleOutput: Array<{
+    type: 'log' | 'error' | 'warn' | 'info'
+    content: unknown[]
+  }>
+  errors: string[]
+  executionTime: number
+  memoryUsage?: number
 }
 
-export class EnhancedError extends Error {
-  type: CodeExecutionError['type']
-  suggestions: string[]
-  
-  constructor(
-    type: CodeExecutionError['type'], 
-    message: string, 
-    suggestions: string[] = []
-  ) {
-    super(message)
-    this.name = 'EnhancedError'
-    this.type = type
-    this.suggestions = suggestions
-  }
+export interface ExecutionOptions {
+  timeout?: number
+  maxMemory?: number
+  allowNetwork?: boolean
+  allowFileSystem?: boolean
+  allowEval?: boolean
+  sandbox?: boolean
 }
 
-// Enhanced error parser for better user experience
-export function parseJavaScriptError(error: Error): CodeExecutionError {
-  const message = error.message.toLowerCase()
-  const stack = error.stack || ''
-  
-  // Extract line and column information
-  const lineMatch = stack.match(/(?:at|@).*?:(\d+):(\d+)/)
-  const line = lineMatch ? parseInt(lineMatch[1]) : undefined
-  const column = lineMatch ? parseInt(lineMatch[2]) : undefined
-
-  let type: CodeExecutionError['type'] = 'runtime'
-  let suggestions: string[] = []
-
-  // Categorize common errors and provide helpful suggestions
-  if (message.includes('syntaxerror') || message.includes('unexpected')) {
-    type = 'syntax'
-    suggestions = [
-      'Check for missing brackets, parentheses, or semicolons',
-      'Verify string quotes are properly closed',
-      'Ensure variable names don\'t start with numbers',
-      'Check for reserved keyword usage'
-    ]
-  } else if (message.includes('referenceerror')) {
-    type = 'runtime'
-    suggestions = [
-      'Check if the variable is declared before use',
-      'Verify variable names are spelled correctly',
-      'Ensure the variable is in the correct scope',
-      'Check for typos in function or object names'
-    ]
-  } else if (message.includes('typeerror')) {
-    type = 'runtime'
-    if (message.includes('null') || message.includes('undefined')) {
-      suggestions = [
-        'Check if the object exists before accessing properties',
-        'Use optional chaining (?.) for safer property access',
-        'Initialize variables before using them',
-        'Check for null or undefined values'
-      ]
-    } else if (message.includes('not a function')) {
-      suggestions = [
-        'Check if the variable is actually a function',
-        'Verify function names are spelled correctly',
-        'Ensure the function is defined before calling',
-        'Check if you\'re calling a method on the right object'
-      ]
-    } else {
-      suggestions = [
-        'Check the data types being used',
-        'Verify method calls on correct object types',
-        'Ensure operations are valid for the data types'
-      ]
-    }
-  } else if (message.includes('rangeerror')) {
-    type = 'runtime'
-    suggestions = [
-      'Check array indices are within bounds',
-      'Verify numeric values are within valid ranges',
-      'Check recursion depth isn\'t too deep',
-      'Ensure loop conditions will eventually terminate'
-    ]
-  } else if (message.includes('timeout') || message.includes('timed out')) {
-    type = 'timeout'
-    suggestions = [
-      'Check for infinite loops',
-      'Reduce computational complexity',
-      'Use setTimeout for long-running operations',
-      'Consider breaking operations into smaller chunks'
-    ]
-  } else if (message.includes('memory') || message.includes('heap')) {
-    type = 'memory'
-    suggestions = [
-      'Reduce array or object sizes',
-      'Clear unused variables',
-      'Check for memory leaks',
-      'Use more efficient algorithms'
-    ]
-  }
-
-  return {
-    type,
-    message: error.message,
-    line,
-    column,
-    stack,
-    suggestions
-  }
-}
-
-// Safe code execution with comprehensive error handling
+/**
+ * Safely execute JavaScript code with comprehensive error handling
+ */
 export async function executeCodeSafely(
   code: string,
-  timeout: number = 5000
-): Promise<{ result?: string; error?: CodeExecutionError }> {
-  if (!code.trim()) {
-    return { result: 'Code is empty' }
+  options: ExecutionOptions = {}
+): Promise<CodeExecutionResult> {
+  const {
+    timeout = 5000,
+    maxMemory = 50 * 1024 * 1024, // 50MB
+    allowNetwork = false,
+    allowFileSystem = false,
+    allowEval = false,
+    sandbox = true
+  } = options
+
+  const startTime = performance.now()
+  const consoleOutput: CodeExecutionResult['consoleOutput'] = []
+  const errors: string[] = []
+
+  try {
+    // Create a safe execution environment
+    const safeGlobals = createSafeEnvironment({
+      allowNetwork,
+      allowFileSystem,
+      allowEval,
+      sandbox
+    })
+
+    // Override console methods to capture output
+    const originalConsole = { ...console }
+    const capturedOutput: CodeExecutionResult['consoleOutput'] = []
+
+    Object.keys(safeGlobals.console).forEach(key => {
+      const original = console[key as keyof Console]
+      console[key as keyof Console] = (...args: any[]) => {
+        const result = safeGlobals.console[key as keyof typeof safeGlobals.console](...args)
+        if (result) capturedOutput.push(result)
+        original.apply(console, args)
+      }
+    })
+
+    // Execute code with timeout
+    const executionPromise = new Promise((resolve, reject) => {
+      try {
+        if (sandbox) {
+          // Create function with restricted scope
+          const func = new Function(...Object.keys(safeGlobals), code)
+          const result = func(...Object.values(safeGlobals))
+          resolve(result)
+        } else {
+          // Direct execution (less safe)
+          const result = eval(code)
+          resolve(result)
+        }
+      } catch (error) {
+        reject(error)
+      }
+    })
+
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error(`Execution timeout (${timeout}ms)`))
+      }, timeout)
+    })
+
+    const result = await Promise.race([executionPromise, timeoutPromise])
+
+    // Restore original console
+    Object.keys(originalConsole).forEach(key => {
+      console[key as keyof Console] = originalConsole[key as keyof Console]
+    })
+
+    const executionTime = performance.now() - startTime
+
+    return {
+      result,
+      consoleOutput: capturedOutput,
+      errors,
+      executionTime
+    }
+
+  } catch (error) {
+    const executionTime = performance.now() - startTime
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    
+    return {
+      result: undefined,
+      consoleOutput,
+      errors: [errorMessage],
+      executionTime
+    }
   }
+}
+
+/**
+ * Create a safe execution environment with restricted globals
+ */
+function createSafeEnvironment(options: {
+  allowNetwork: boolean
+  allowFileSystem: boolean
+  allowEval: boolean
+  sandbox: boolean
+}) {
+  const { allowNetwork, allowFileSystem, allowEval, sandbox } = options
+
+  const safeGlobals: Record<string, any> = {
+    // Basic JavaScript objects
+    Object,
+    Array,
+    String,
+    Number,
+    Boolean,
+    Symbol,
+    BigInt,
+    Date,
+    RegExp,
+    Error,
+    TypeError,
+    RangeError,
+    SyntaxError,
+    ReferenceError,
+    URIError,
+    EvalError,
+    AggregateError,
+    
+    // Math and utilities
+    Math,
+    JSON,
+    parseInt,
+    parseFloat,
+    isNaN,
+    isFinite,
+    encodeURI,
+    decodeURI,
+    encodeURIComponent,
+    decodeURIComponent,
+    escape,
+    unescape,
+    
+    // Collections
+    Map,
+    Set,
+    WeakMap,
+    WeakSet,
+    
+    // Typed Arrays
+    ArrayBuffer,
+    SharedArrayBuffer,
+    DataView,
+    Int8Array,
+    Uint8Array,
+    Uint8ClampedArray,
+    Int16Array,
+    Uint16Array,
+    Int32Array,
+    Uint32Array,
+    Float32Array,
+    Float64Array,
+    BigInt64Array,
+    BigUint64Array,
+    
+    // Async and iteration
+    Promise,
+    Generator,
+    GeneratorFunction,
+    AsyncGenerator,
+    AsyncGeneratorFunction,
+    Iterator,
+    AsyncIterator,
+    
+    // Meta programming
+    Proxy,
+    Reflect,
+    
+    // Memory management
+    WeakRef,
+    FinalizationRegistry,
+    
+    // Console with captured output
+    console: {
+      log: (...args: any[]) => ({
+        type: 'log' as const,
+        content: args
+      }),
+      error: (...args: any[]) => ({
+        type: 'error' as const,
+        content: args
+      }),
+      warn: (...args: any[]) => ({
+        type: 'warn' as const,
+        content: args
+      }),
+      info: (...args: any[]) => ({
+        type: 'info' as const,
+        content: args
+      })
+    },
+
+    // Timers with restrictions
+    setTimeout: (fn: Function, delay: number) => {
+      if (delay > 5000) throw new Error('Timeout delay cannot exceed 5000ms')
+      return setTimeout(fn, Math.min(delay, 5000))
+    },
+    setInterval: (fn: Function, delay: number) => {
+      if (delay > 5000) throw new Error('Interval delay cannot exceed 5000ms')
+      return setInterval(fn, Math.min(delay, 5000))
+    },
+    clearTimeout,
+    clearInterval,
+
+    // Global object
+    globalThis: sandbox ? {} : globalThis
+  }
+
+  // Add network APIs if allowed
+  if (allowNetwork) {
+    safeGlobals.fetch = fetch
+    safeGlobals.XMLHttpRequest = XMLHttpRequest
+  }
+
+  // Add file system APIs if allowed
+  if (allowFileSystem) {
+    safeGlobals.FileReader = FileReader
+    safeGlobals.Blob = Blob
+    safeGlobals.File = File
+  }
+
+  // Add eval if allowed
+  if (allowEval) {
+    safeGlobals.eval = eval
+  }
+
+  return safeGlobals
+}
+
+/**
+ * Validate code for potential security issues
+ */
+export function validateCode(code: string): {
+  isValid: boolean
+  errors: string[]
+  warnings: string[]
+} {
+  const errors: string[] = []
+  const warnings: string[] = []
 
   // Check for potentially dangerous patterns
   const dangerousPatterns = [
-    /while\s*\(\s*true\s*\)/gi, // Infinite while loops
-    /for\s*\(\s*;\s*;\s*\)/gi,   // Infinite for loops
-    /eval\s*\(/gi,              // Eval usage
-    /Function\s*\(/gi,          // Dynamic function creation
-    /import\s*\(/gi,            // Dynamic imports
-    /require\s*\(/gi,           // Node.js require
-    /document\s*\./gi,          // DOM access
-    /window\s*\./gi,            // Window access
-    /global\s*\./gi,            // Global access
-    /process\s*\./gi,           // Process access
-    /fetch\s*\(/gi,             // Network requests
-    /XMLHttpRequest/gi,         // XHR requests
-    /localStorage/gi,           // Local storage access
-    /sessionStorage/gi,         // Session storage access
+    { pattern: /eval\s*\(/, message: 'eval() is not allowed for security reasons' },
+    { pattern: /Function\s*\(/, message: 'Function constructor is not allowed' },
+    { pattern: /import\s*\(/, message: 'Dynamic imports are not allowed' },
+    { pattern: /require\s*\(/, message: 'require() is not allowed' },
+    { pattern: /process\./, message: 'Node.js process object is not available' },
+    { pattern: /window\./, message: 'Direct window access is restricted' },
+    { pattern: /document\./, message: 'Direct document access is restricted' },
+    { pattern: /localStorage\./, message: 'localStorage access is restricted' },
+    { pattern: /sessionStorage\./, message: 'sessionStorage access is restricted' },
+    { pattern: /indexedDB\./, message: 'IndexedDB access is restricted' },
+    { pattern: /fetch\s*\(/, message: 'Network requests are not allowed by default' },
+    { pattern: /XMLHttpRequest/, message: 'XMLHttpRequest is not allowed by default' },
+    { pattern: /WebSocket/, message: 'WebSocket is not allowed' },
+    { pattern: /Worker/, message: 'Web Workers are not allowed' },
+    { pattern: /SharedWorker/, message: 'Shared Workers are not allowed' },
+    { pattern: /ServiceWorker/, message: 'Service Workers are not allowed' },
+    { pattern: /navigator\./, message: 'Navigator access is restricted' },
+    { pattern: /location\./, message: 'Location access is restricted' },
+    { pattern: /history\./, message: 'History access is restricted' }
   ]
 
-  for (const pattern of dangerousPatterns) {
+  dangerousPatterns.forEach(({ pattern, message }) => {
     if (pattern.test(code)) {
-      return {
-        error: {
-          type: 'security',
-          message: 'Code contains potentially unsafe patterns',
-          suggestions: [
-            'Avoid infinite loops',
-            'Don\'t use eval() or dynamic code execution',
-            'Avoid accessing browser APIs in this sandbox',
-            'Focus on pure JavaScript logic'
-          ]
-        }
-      }
-    }
-  }
-
-  // Create isolated execution environment
-  const consoleOutput: string[] = []
-  const mockConsole = {
-    log: (...args: any[]) => {
-      consoleOutput.push(
-        args.map(arg => {
-          if (typeof arg === 'object' && arg !== null) {
-            try {
-              return JSON.stringify(arg, null, 2)
-            } catch {
-              return String(arg)
-            }
-          }
-          return String(arg)
-        }).join(' ')
-      )
-    },
-    error: (...args: any[]) => consoleOutput.push('ERROR: ' + args.map(String).join(' ')),
-    warn: (...args: any[]) => consoleOutput.push('WARN: ' + args.map(String).join(' ')),
-    info: (...args: any[]) => consoleOutput.push('INFO: ' + args.map(String).join(' ')),
-    debug: (...args: any[]) => consoleOutput.push('DEBUG: ' + args.map(String).join(' ')),
-  }
-
-  return new Promise((resolve) => {
-    const timeoutId = setTimeout(() => {
-      resolve({
-        error: {
-          type: 'timeout',
-          message: ERROR_MESSAGES.CODE_EXECUTION_TIMEOUT,
-          suggestions: [
-            'Check for infinite loops',
-            'Simplify complex calculations',
-            'Break down large operations'
-          ]
-        }
-      })
-    }, timeout)
-
-    try {
-      // Create function with limited scope
-      const func = new Function(
-        'console',
-        `
-        "use strict";
-        ${code}
-        `
-      )
-
-      const result = func(mockConsole)
-      clearTimeout(timeoutId)
-      
-      const output = consoleOutput.length > 0 
-        ? consoleOutput.join('\n')
-        : result !== undefined 
-          ? String(result)
-          : 'Code executed successfully (no output)'
-
-      resolve({ result: output })
-    } catch (error) {
-      clearTimeout(timeoutId)
-      const parsedError = parseJavaScriptError(error as Error)
-      resolve({ error: parsedError })
+      errors.push(message)
     }
   })
-}
 
-// Error reporting utility
-export function reportError(
-  error: CodeExecutionError,
-  context: {
-    userAgent?: string
-    timestamp?: number
-    code?: string
-    objectName?: string
-  } = {}
-) {
-  // In production, you might want to send this to an error tracking service
-  const errorReport = {
-    ...error,
-    context: {
-      userAgent: navigator.userAgent,
-      timestamp: Date.now(),
-      url: window.location.href,
-      ...context
-    }
-  }
+  // Check for performance issues
+  const performanceWarnings = [
+    { pattern: /while\s*\(true\)/, message: 'Infinite loops can cause performance issues' },
+    { pattern: /for\s*\([^)]*\)\s*{[^}]*while\s*\(true\)/, message: 'Nested infinite loops detected' },
+    { pattern: /setInterval\s*\([^,]*,\s*0\)/, message: 'setInterval with 0 delay can cause performance issues' },
+    { pattern: /setTimeout\s*\([^,]*,\s*0\)/, message: 'setTimeout with 0 delay can cause performance issues' }
+  ]
 
-  // For now, just log to console in development
-  if (process.env.NODE_ENV === 'development') {
-    console.group('🐛 JavaScript Objects Tutorial - Error Report')
-    console.error('Error:', errorReport)
-    console.groupEnd()
-  }
-
-  // You could integrate with services like Sentry, LogRocket, etc.
-  // Sentry.captureException(error, { extra: context })
-}
-
-// User-friendly error messages
-export function getErrorDisplayMessage(error: CodeExecutionError): string {
-  const baseMessage = error.message
-  
-  switch (error.type) {
-    case 'syntax':
-      return `Syntax Error: ${baseMessage}\n\nThis usually means there's a problem with how your code is written.`
-    
-    case 'runtime':
-      return `Runtime Error: ${baseMessage}\n\nThis error occurred while your code was running.`
-    
-    case 'timeout':
-      return `Timeout Error: Your code took too long to execute.\n\nThis might be caused by an infinite loop or very complex calculations.`
-    
-    case 'security':
-      return `Security Error: ${baseMessage}\n\nFor safety reasons, some code patterns are not allowed in this environment.`
-    
-    case 'memory':
-      return `Memory Error: ${baseMessage}\n\nYour code used too much memory. Try to optimize your data structures.`
-    
-    default:
-      return `Error: ${baseMessage}`
-  }
-}
-
-// Recovery suggestions based on error patterns
-export function getRecoverySuggestions(error: CodeExecutionError): string[] {
-  const baseSuggestions = error.suggestions || []
-  
-  // Add general suggestions based on error type
-  switch (error.type) {
-    case 'syntax':
-      return [
-        ...baseSuggestions,
-        'Use a code formatter to help identify syntax issues',
-        'Check for matching brackets and parentheses',
-        'Validate string quotes and escape characters'
-      ]
-    
-    case 'runtime':
-      return [
-        ...baseSuggestions,
-        'Add console.log statements to debug values',
-        'Use try-catch blocks for error handling',
-        'Check variable initialization'
-      ]
-    
-    case 'timeout':
-      return [
-        ...baseSuggestions,
-        'Add breakpoints or console.log to find slow parts',
-        'Use array methods like map/filter instead of loops when possible',
-        'Consider async/await for heavy operations'
-      ]
-    
-    case 'memory':
-      return [
-        ...baseSuggestions,
-        'Use let/const instead of var to limit scope',
-        'Clear large arrays when done: array.length = 0',
-        'Avoid creating too many objects in loops'
-      ]
-    
-    default:
-      return baseSuggestions
-  }
-}
-
-// Code quality analyzer
-export function analyzeCodeQuality(code: string): {
-  score: number
-  issues: Array<{
-    type: 'warning' | 'suggestion' | 'best-practice'
-    message: string
-    line?: number
-  }>
-} {
-  const issues: Array<{
-    type: 'warning' | 'suggestion' | 'best-practice'
-    message: string
-    line?: number
-  }> = []
-
-  const lines = code.split('\n')
-  let score = 100
-
-  lines.forEach((line, index) => {
-    const lineNumber = index + 1
-    
-    // Check for var usage (prefer let/const)
-    if (line.includes('var ')) {
-      issues.push({
-        type: 'best-practice',
-        message: 'Consider using let or const instead of var',
-        line: lineNumber
-      })
-      score -= 2
-    }
-
-    // Check for == usage (prefer ===)
-    if (line.includes('==') && !line.includes('===')) {
-      issues.push({
-        type: 'best-practice',
-        message: 'Consider using === instead of == for strict equality',
-        line: lineNumber
-      })
-      score -= 3
-    }
-
-    // Check for console.log (should be removed in production)
-    if (line.includes('console.log')) {
-      issues.push({
-        type: 'suggestion',
-        message: 'Consider removing console.log statements in production code',
-        line: lineNumber
-      })
-      score -= 1
-    }
-
-    // Check for magic numbers
-    const magicNumberPattern = /\b\d{2,}\b/
-    if (magicNumberPattern.test(line) && !line.includes('//')) {
-      issues.push({
-        type: 'suggestion',
-        message: 'Consider using named constants instead of magic numbers',
-        line: lineNumber
-      })
-      score -= 1
-    }
-
-    // Check for long lines
-    if (line.length > 100) {
-      issues.push({
-        type: 'suggestion',
-        message: 'Line is quite long, consider breaking it up',
-        line: lineNumber
-      })
-      score -= 1
+  performanceWarnings.forEach(({ pattern, message }) => {
+    if (pattern.test(code)) {
+      warnings.push(message)
     }
   })
+
+  // Check code length
+  if (code.length > 10000) {
+    warnings.push('Code is very long and may take time to execute')
+  }
 
   return {
-    score: Math.max(0, score),
-    issues
+    isValid: errors.length === 0,
+    errors,
+    warnings
   }
+}
+
+/**
+ * Format error messages for better readability
+ */
+export function formatError(error: Error | string): string {
+  const message = error instanceof Error ? error.message : error
+  
+  // Common error patterns
+  const patterns = [
+    {
+      regex: /Unexpected token (.+)/,
+      format: (match: RegExpMatchArray) => `Syntax error: Unexpected ${match[1]}`
+    },
+    {
+      regex: /Cannot read property '(.+)' of (.+)/,
+      format: (match: RegExpMatchArray) => `Cannot read property '${match[1]}' of ${match[2]}`
+    },
+    {
+      regex: /(.+) is not defined/,
+      format: (match: RegExpMatchArray) => `'${match[1]}' is not defined`
+    },
+    {
+      regex: /(.+) is not a function/,
+      format: (match: RegExpMatchArray) => `'${match[1]}' is not a function`
+    }
+  ]
+
+  for (const pattern of patterns) {
+    const match = message.match(pattern.regex)
+    if (match) {
+      return pattern.format(match)
+    }
+  }
+
+  return message
+}
+
+/**
+ * Get error type and severity
+ */
+export function analyzeError(error: Error | string): {
+  type: 'syntax' | 'runtime' | 'reference' | 'type' | 'range' | 'uri' | 'eval' | 'aggregate' | 'unknown'
+  severity: 'low' | 'medium' | 'high' | 'critical'
+  category: 'parsing' | 'execution' | 'security' | 'performance' | 'other'
+} {
+  const message = error instanceof Error ? error.message : String(error).toLowerCase()
+
+  // Determine error type
+  let type: any = 'unknown'
+  if (message.includes('unexpected token') || message.includes('syntax')) {
+    type = 'syntax'
+  } else if (message.includes('not defined') || message.includes('cannot read')) {
+    type = 'reference'
+  } else if (message.includes('not a function') || message.includes('type')) {
+    type = 'type'
+  } else if (message.includes('out of range') || message.includes('index')) {
+    type = 'range'
+  } else if (message.includes('uri') || message.includes('url')) {
+    type = 'uri'
+  } else if (message.includes('eval')) {
+    type = 'eval'
+  } else if (message.includes('aggregate')) {
+    type = 'aggregate'
+  } else if (message.includes('timeout') || message.includes('execution')) {
+    type = 'runtime'
+  }
+
+  // Determine severity
+  let severity: any = 'medium'
+  if (message.includes('security') || message.includes('eval') || message.includes('function')) {
+    severity = 'critical'
+  } else if (message.includes('timeout') || message.includes('memory')) {
+    severity = 'high'
+  } else if (message.includes('performance') || message.includes('infinite')) {
+    severity = 'medium'
+  } else if (message.includes('warning') || message.includes('deprecated')) {
+    severity = 'low'
+  }
+
+  // Determine category
+  let category: any = 'other'
+  if (type === 'syntax') {
+    category = 'parsing'
+  } else if (['runtime', 'reference', 'type', 'range', 'uri'].includes(type)) {
+    category = 'execution'
+  } else if (type === 'eval' || message.includes('security')) {
+    category = 'security'
+  } else if (message.includes('timeout') || message.includes('performance')) {
+    category = 'performance'
+  }
+
+  return { type, severity, category }
 }

@@ -16,6 +16,7 @@ export interface LearningProgress {
 interface AppContextType {
   favorites: string[]
   visitedObjects: string[]
+  totalObjects: number
   addToFavorites: (objectName: string) => void
   removeFromFavorites: (objectName: string) => void
   toggleFavorite: (objectName: string) => void
@@ -25,7 +26,6 @@ interface AppContextType {
   getProgress: () => LearningProgress
   clearProgress: () => void
   clearFavorites: () => void
-  // New utility functions
   getFavoritesByCategory: (category: string) => string[]
   getRecentlyVisited: (limit?: number) => string[]
   getBatchProgress: (objectNames: string[]) => { completed: number; total: number }
@@ -98,10 +98,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isObjectVisited])
 
+  const totalObjects = getTotalObjectsCount()
+
   return (
     <AppContext.Provider value={{
       favorites,
       visitedObjects,
+      totalObjects,
       addToFavorites,
       removeFromFavorites,
       toggleFavorite,

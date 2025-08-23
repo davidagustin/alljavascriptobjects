@@ -27,7 +27,7 @@ import {
 import Link from 'next/link'
 import { useApp } from '../contexts/AppContext'
 import { executeCodeSafely, type CodeExecutionResult } from '../utils/errorHandling'
-import { usePerformance } from '../hooks/usePerformance'
+import { usePerformanceTracking } from '../utils/performance'
 import { PERFORMANCE } from '../utils/constants'
 import type { 
   CodeExample, 
@@ -107,7 +107,15 @@ SyntaxHighlighter.displayName = 'SyntaxHighlighter'
 
 // Custom hook for code execution with proper error handling
 const useCodeExecution = () => {
-  const { executeWithTimeout } = usePerformance()
+  // Simple timeout implementation
+  const executeWithTimeout = useCallback(async (fn: () => Promise<any>, timeout: number = 5000) => {
+    return Promise.race([
+      fn(),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Code execution timed out')), timeout)
+      )
+    ])
+  }, [])
   
   const runCode = useCallback(async (code: string): Promise<CodeExecutionResult> => {
     try {
@@ -223,10 +231,20 @@ const ObjectPage: FC<ObjectPageProps> = ({
   // Custom hooks
   const { markAsVisited } = useApp()
   const { runCode } = useCodeExecution()
-  const { isIntersecting } = usePerformance().useIntersectionObserver(
-    syntaxRef, 
-    { threshold: 0.1 }
-  )
+  // Simple intersection observer implementation
+  const [isIntersecting, setIsIntersecting] = useState(false)
+  
+  useEffect(() => {
+    if (!syntaxRef.current) return
+    
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsIntersecting(entry.isIntersecting),
+      { threshold: 0.1 }
+    )
+    
+    observer.observe(syntaxRef.current)
+    return () => observer.disconnect()
+  }, [])
 
   // Mark object as visited when component mounts
   useEffect(() => {

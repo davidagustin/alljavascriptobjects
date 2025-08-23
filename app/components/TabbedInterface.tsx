@@ -1,11 +1,18 @@
 'use client'
 
-import { useState } from 'react'
-import { BookOpen, Play, Brain, Target, Code2, Settings } from 'lucide-react'
+import { useState, useCallback, useMemo } from 'react'
+import { BookOpen, Play, Brain, Target, Code2, Settings, Share2, Star, Clock, TrendingUp, Bot, BarChart3 } from 'lucide-react'
 import ObjectExamples from './ObjectExamples'
 import CodeRunner from './CodeRunner'
 import LearningPath from './LearningPath'
 import Quiz from './Quiz'
+import CodeSnippets from './CodeSnippets'
+import StudyMode from './StudyMode'
+import AIAssistant from './AIAssistant'
+import VisualizationHub from './VisualizationHub'
+import { useApp } from '../contexts/AppContext'
+import { usePerformanceTracking } from '../utils/performance'
+import { isFeatureEnabled } from '../config/app'
 
 interface TabbedInterfaceProps {
   selectedObject: string
@@ -17,104 +24,151 @@ interface Tab {
   label: string
   icon: React.ComponentType<{ className?: string }>
   component: React.ComponentType<any>
-  description: string
+  badge?: number | string
+  disabled?: boolean
 }
 
 export default function TabbedInterface({ selectedObject, onSelectObject }: TabbedInterfaceProps) {
   const [activeTab, setActiveTab] = useState('examples')
+  const { favorites, visitedObjects, totalObjects } = useApp()
+  const { trackInteraction } = usePerformanceTracking()
 
-  const tabs: Tab[] = [
-    {
-      id: 'examples',
-      label: 'Examples',
-      icon: Code2,
-      component: ObjectExamples,
-      description: 'Interactive code examples and explanations'
-    },
-    {
-      id: 'playground',
-      label: 'Playground',
-      icon: Play,
-      component: CodeRunner,
-      description: 'Write and test your own JavaScript code'
-    },
-    {
-      id: 'learning',
-      label: 'Learning Path',
-      icon: BookOpen,
-      component: LearningPath,
-      description: 'Structured learning tracks and progress'
-    },
-    {
-      id: 'quiz',
-      label: 'Quiz',
-      icon: Brain,
-      component: Quiz,
-      description: 'Test your knowledge with interactive quizzes'
+  const tabs: Tab[] = useMemo(() => {
+    const baseTabs = [
+      {
+        id: 'examples',
+        label: 'Examples',
+        icon: BookOpen,
+        component: ObjectExamples,
+        badge: undefined
+      },
+      {
+        id: 'playground',
+        label: 'Playground',
+        icon: Play,
+        component: CodeRunner,
+        badge: undefined
+      },
+      {
+        id: 'learning',
+        label: 'Learning Path',
+        icon: Brain,
+        component: LearningPath,
+        badge: undefined
+      },
+      {
+        id: 'quiz',
+        label: 'Quiz',
+        icon: Target,
+        component: Quiz,
+        badge: undefined
+      },
+      {
+        id: 'snippets',
+        label: 'Snippets',
+        icon: Code2,
+        component: CodeSnippets,
+        badge: undefined
+      },
+      {
+        id: 'study',
+        label: 'Study Mode',
+        icon: Clock,
+        component: StudyMode,
+        badge: undefined
+      },
+      {
+        id: 'analytics',
+        label: 'Analytics',
+        icon: BarChart3,
+        component: VisualizationHub,
+        badge: undefined
+      }
+    ]
+
+    // Add AI Assistant tab if feature is enabled
+    if (isFeatureEnabled('enableAIAssistant')) {
+      baseTabs.push({
+        id: 'ai-assistant',
+        label: 'AI Assistant',
+        icon: Bot,
+        component: AIAssistant,
+        badge: '✨'
+      })
     }
-  ]
 
-  const ActiveComponent = tabs.find(tab => tab.id === activeTab)?.component
+    return baseTabs
+  }, [])
+
+  const handleTabChange = useCallback((tabId: string) => {
+    setActiveTab(tabId)
+    trackInteraction('tab_change', tabId, {
+      previousTab: activeTab,
+      selectedObject
+    })
+  }, [activeTab, selectedObject, trackInteraction])
+
+  const activeTabData = useMemo(() => 
+    tabs.find(tab => tab.id === activeTab), 
+    [tabs, activeTab]
+  )
+
+  const ActiveComponent = activeTabData?.component
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
       {/* Tab Navigation */}
       <div className="border-b border-gray-200 dark:border-gray-700">
-        <div className="flex space-x-1 p-2">
+        <nav className="flex space-x-8 px-6" aria-label="Tabs">
           {tabs.map((tab) => {
             const Icon = tab.icon
             const isActive = activeTab === tab.id
-            
+            const isDisabled = tab.disabled
+
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 flex items-center justify-center px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  isActive
-                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-100 dark:hover:bg-gray-700'
-                }`}
-                title={tab.description}
+                onClick={() => !isDisabled && handleTabChange(tab.id)}
+                disabled={isDisabled}
+                className={`
+                  flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors
+                  ${isActive
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600'
+                  }
+                  ${isDisabled
+                    ? 'opacity-50 cursor-not-allowed'
+                    : 'cursor-pointer'
+                  }
+                `}
+                aria-current={isActive ? 'page' : undefined}
               >
-                <Icon className="h-4 w-4 mr-2" />
-                {tab.label}
+                <Icon className="h-4 w-4" />
+                <span>{tab.label}</span>
+                {tab.badge && (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
+                    {tab.badge}
+                  </span>
+                )}
               </button>
             )
           })}
-        </div>
+        </nav>
       </div>
 
       {/* Tab Content */}
-      <div className="p-0">
-        {ActiveComponent && (
-          <ActiveComponent
+      <div className="p-6">
+        {ActiveComponent ? (
+          <ActiveComponent 
             selectedObject={selectedObject}
             onSelectObject={onSelectObject}
           />
+        ) : (
+          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+            <BookOpen className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+            <p>Select a tab to get started</p>
+          </div>
         )}
-      </div>
-
-      {/* Quick Actions */}
-      <div className="border-t border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-700/50">
-        <div className="flex items-center justify-between">
-          <div className="text-sm text-gray-600 dark:text-gray-400">
-            Currently viewing: <span className="font-medium text-gray-900 dark:text-gray-100">{selectedObject}</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => setActiveTab('examples')}
-              className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-            >
-              View Examples
-            </button>
-            <button
-              onClick={() => setActiveTab('playground')}
-              className="px-3 py-1.5 text-xs bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-            >
-              Try Code
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   )

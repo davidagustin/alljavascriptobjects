@@ -11,7 +11,8 @@ import LearningStats from './components/LearningStats'
 import PWAInstallButton from './components/PWAInstallButton'
 import StudyMode from './components/StudyMode'
 import Notifications, { NotificationProvider, useNotifications } from './components/Notifications'
-import { BookOpen, Code, Play, Search, Star, TrendingUp, Clock } from 'lucide-react'
+import AnalyticsDashboard from './components/AnalyticsDashboard'
+import { BookOpen, Code, Search, Star, TrendingUp, Clock } from 'lucide-react'
 import { useApp } from './contexts/AppContext'
 import { OBJECT_CATEGORIES, getAllObjects } from './constants/objects'
 import { searchObjects, filterObjects } from './utils/search'
@@ -23,7 +24,7 @@ function HomeContent() {
   const [filterType, setFilterType] = useState<'all' | 'favorites' | 'visited'>('all')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   
-  const { favorites, isObjectVisited, markAsVisited, isObjectFavorited, visitedObjects } = useApp()
+  const { favorites, isObjectVisited, markAsVisited, visitedObjects } = useApp()
   const { notifications, markAsRead, clearAll } = useNotifications()
   const { trackInteraction } = usePerformanceTracking()
 
@@ -285,6 +286,9 @@ function HomeContent() {
 
       {/* Keyboard Shortcuts */}
       <KeyboardShortcuts />
+
+      {/* Analytics Dashboard */}
+      <AnalyticsDashboard />
 
       {/* PWA Install Banner */}
       <PWAInstallButton />

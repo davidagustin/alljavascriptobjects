@@ -26,7 +26,7 @@ export const APP_CONFIG = {
     enableAdvancedSearch: true,
     enableCodeSnippets: true,
     enableNotifications: true,
-    enableAIAssistant: false, // Coming soon
+    enableAIAssistant: true,
     enableCollaboration: false, // Coming soon
     enableLearningPaths: false // Coming soon
   },
