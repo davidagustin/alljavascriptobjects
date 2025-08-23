@@ -149,7 +149,48 @@ export function useVirtualScroll<T>({
   }
 }
 
-// Performance measurement hook
+// Performance measurement hook  
+export function usePerformance() {
+  const measureRef = useRef<{ [key: string]: number }>({})
+
+  const startMeasure = useCallback((name: string) => {
+    if (typeof performance !== 'undefined') {
+      measureRef.current[name] = performance.now()
+    }
+  }, [])
+
+  const endMeasure = useCallback((name: string): number => {
+    if (typeof performance === 'undefined') return 0
+    
+    const startTime = measureRef.current[name]
+    if (startTime === undefined) {
+      console.warn(`No start time found for measurement: ${name}`)
+      return 0
+    }
+    
+    const duration = performance.now() - startTime
+    delete measureRef.current[name]
+    return duration
+  }, [])
+
+  const measureAsync = useCallback(async <T>(
+    name: string, 
+    asyncOperation: () => Promise<T>
+  ): Promise<{ result: T; duration: number }> => {
+    startMeasure(name)
+    try {
+      const result = await asyncOperation()
+      const duration = endMeasure(name)
+      return { result, duration }
+    } catch (error) {
+      endMeasure(name)
+      throw error
+    }
+  }, [startMeasure, endMeasure])
+
+  return { startMeasure, endMeasure, measureAsync }
+}
+
 export function usePerformanceMeasure() {
   const measureRef = useRef<{ [key: string]: number }>({})
 

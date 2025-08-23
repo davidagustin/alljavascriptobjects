@@ -6,21 +6,21 @@ import { AlertTriangle, RefreshCw, Home, Bug } from 'lucide-react'
 interface Props {
   children: ReactNode
   fallback?: ReactNode
-  onError?: (error: Error, errorInfo: ErrorInfo) => void
+  onError?: ((error: Error, errorInfo: ErrorInfo) => void) | undefined
   resetKey?: string | number
 }
 
 interface State {
   hasError: boolean
-  error?: Error
-  errorInfo?: ErrorInfo
-  errorId?: string
+  error: Error | null
+  errorInfo: ErrorInfo | null
+  errorId: string | null
 }
 
 export default class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props)
-    this.state = { hasError: false }
+    this.state = { hasError: false, error: null, errorInfo: null, errorId: null }
   }
 
   static getDerivedStateFromError(error: Error): State {
@@ -28,6 +28,7 @@ export default class ErrorBoundary extends Component<Props, State> {
     return { 
       hasError: true, 
       error,
+      errorInfo: null,
       errorId: `error-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     }
   }
@@ -83,7 +84,12 @@ export default class ErrorBoundary extends Component<Props, State> {
   }
 
   private handleReset = () => {
-    this.setState({ hasError: false })
+    this.setState({ 
+      hasError: false, 
+      error: null, 
+      errorInfo: null, 
+      errorId: null 
+    })
   }
 
   private handleReload = () => {
@@ -254,7 +260,7 @@ export function withErrorBoundary<P extends object>(
   onError?: (error: Error, errorInfo: ErrorInfo) => void
 ) {
   const WrappedComponent = (props: P) => (
-    <ErrorBoundary fallback={fallback} onError={onError}>
+    <ErrorBoundary fallback={fallback} onError={onError || undefined}>
       <Component {...props} />
     </ErrorBoundary>
   )

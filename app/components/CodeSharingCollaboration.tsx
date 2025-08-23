@@ -285,7 +285,7 @@ greetUser({ name: 'Bob' }); // Hello Bob, age: unknown`,
       likes: 0,
       views: 0,
       comments: [],
-      tags: shareForm.tags.split(',').map(tag => tag.trim()).filter(Boolean),
+      tags: (shareForm.tags || '').split(',').map(tag => tag.trim()).filter(Boolean),
       visibility: shareForm.visibility,
       forks: 0,
       category: shareForm.category

@@ -5,9 +5,25 @@ export default function Uint8ClampedArrayPage() {
     <ObjectPage
       title="Uint8ClampedArray"
       description="The Uint8ClampedArray typed array represents an array of 8-bit unsigned integers clamped to 0-255."
+      overview="Uint8ClampedArray is a specialized TypedArray that stores 8-bit unsigned integers with automatic clamping. Unlike other TypedArrays, values are clamped (not wrapped) to the 0-255 range, making it perfect for image processing and Canvas operations."
+      syntax="new Uint8ClampedArray(length | buffer | array | arrayBuffer, byteOffset?, length?)"
+      useCases={[
+        "Canvas ImageData pixel manipulation",
+        "Image processing and computer vision",
+        "Color value storage and processing",
+        "Graphics programming and filters",
+        "RGB/RGBA data handling",
+        "Safe integer operations within 0-255 range"
+      ]}
+      complexity="intermediate"
+      relatedObjects={["Uint8Array", "ArrayBuffer", "ImageData", "Canvas", "DataView"]}
       examples={[
         {
+          id: "constructor-examples",
           title: "Complete Constructor Examples",
+          description: "Demonstrates all the different ways to create Uint8ClampedArray instances and their clamping behavior",
+          difficulty: "intermediate",
+          tags: ["constructor", "clamping", "typed-arrays"],
           code: `// All ways to create Uint8ClampedArray
 // 1. Create with specific length (initialized to 0)
 const arr1 = new Uint8ClampedArray(4);
@@ -280,275 +296,6 @@ console.log("Original pixel 0:", testImage.slice(0, 4));
 console.log("Sepia pixel 0:", sepiaImage.slice(0, 4));
 console.log("Blurred pixel 0:", blurredImage.slice(0, 4));`
         }
-      ]}
-      properties={[
-        {
-          name: "BYTES_PER_ELEMENT",
-          type: "number",
-          description: "Returns 1, the size in bytes of each element"
-        },
-        {
-          name: "length",
-          type: "number",
-          description: "The length of the array"
-        },
-        {
-          name: "buffer",
-          type: "ArrayBuffer",
-          description: "The ArrayBuffer referenced by the array"
-        },
-        {
-          name: "byteLength",
-          type: "number",
-          description: "The length in bytes of the array"
-        },
-        {
-          name: "byteOffset",
-          type: "number",
-          description: "The offset in bytes of the array within the underlying ArrayBuffer"
-        }
-      ]}
-      methods={[
-        {
-          name: "at(index)",
-          description: "Returns element at the given index, supporting negative indices",
-          parameters: [
-            { name: "index", type: "number", description: "Index of element to return" }
-          ]
-        },
-        {
-          name: "copyWithin(target, start, end?)",
-          description: "Copies elements within the array",
-          parameters: [
-            { name: "target", type: "number", description: "Index to copy elements to" },
-            { name: "start", type: "number", description: "Start index of elements to copy" },
-            { name: "end", type: "number", description: "End index (exclusive)" }
-          ]
-        },
-        {
-          name: "entries()",
-          description: "Returns iterator of [index, value] pairs",
-          parameters: []
-        },
-        {
-          name: "every(callback, thisArg?)",
-          description: "Tests if all elements pass the provided function",
-          parameters: [
-            { name: "callback", type: "function", description: "Test function" },
-            { name: "thisArg", type: "any", description: "Value to use as this" }
-          ]
-        },
-        {
-          name: "fill(value, start?, end?)",
-          description: "Fills elements with a static value",
-          parameters: [
-            { name: "value", type: "number", description: "Value to fill with" },
-            { name: "start", type: "number", description: "Start index" },
-            { name: "end", type: "number", description: "End index (exclusive)" }
-          ]
-        },
-        {
-          name: "filter(callback, thisArg?)",
-          description: "Creates new array with elements that pass the test",
-          parameters: [
-            { name: "callback", type: "function", description: "Test function" },
-            { name: "thisArg", type: "any", description: "Value to use as this" }
-          ]
-        },
-        {
-          name: "find(callback, thisArg?)",
-          description: "Returns first element that satisfies the test function",
-          parameters: [
-            { name: "callback", type: "function", description: "Test function" },
-            { name: "thisArg", type: "any", description: "Value to use as this" }
-          ]
-        },
-        {
-          name: "findIndex(callback, thisArg?)",
-          description: "Returns index of first element that satisfies test function",
-          parameters: [
-            { name: "callback", type: "function", description: "Test function" },
-            { name: "thisArg", type: "any", description: "Value to use as this" }
-          ]
-        },
-        {
-          name: "findLast(callback, thisArg?)",
-          description: "Returns last element that satisfies the test function",
-          parameters: [
-            { name: "callback", type: "function", description: "Test function" },
-            { name: "thisArg", type: "any", description: "Value to use as this" }
-          ]
-        },
-        {
-          name: "findLastIndex(callback, thisArg?)",
-          description: "Returns index of last element that satisfies test function",
-          parameters: [
-            { name: "callback", type: "function", description: "Test function" },
-            { name: "thisArg", type: "any", description: "Value to use as this" }
-          ]
-        },
-        {
-          name: "forEach(callback, thisArg?)",
-          description: "Executes function for each array element",
-          parameters: [
-            { name: "callback", type: "function", description: "Function to execute" },
-            { name: "thisArg", type: "any", description: "Value to use as this" }
-          ]
-        },
-        {
-          name: "includes(searchElement, fromIndex?)",
-          description: "Determines if array includes a certain value",
-          parameters: [
-            { name: "searchElement", type: "number", description: "Element to search for" },
-            { name: "fromIndex", type: "number", description: "Index to start search from" }
-          ]
-        },
-        {
-          name: "indexOf(searchElement, fromIndex?)",
-          description: "Returns first index of specified element",
-          parameters: [
-            { name: "searchElement", type: "number", description: "Element to search for" },
-            { name: "fromIndex", type: "number", description: "Index to start search from" }
-          ]
-        },
-        {
-          name: "join(separator?)",
-          description: "Joins all elements into a string",
-          parameters: [
-            { name: "separator", type: "string", description: "String to separate elements" }
-          ]
-        },
-        {
-          name: "keys()",
-          description: "Returns iterator of array indices",
-          parameters: []
-        },
-        {
-          name: "lastIndexOf(searchElement, fromIndex?)",
-          description: "Returns last index of specified element",
-          parameters: [
-            { name: "searchElement", type: "number", description: "Element to search for" },
-            { name: "fromIndex", type: "number", description: "Index to start search from" }
-          ]
-        },
-        {
-          name: "map(callback, thisArg?)",
-          description: "Creates new array with results of calling function on every element",
-          parameters: [
-            { name: "callback", type: "function", description: "Function to call on each element" },
-            { name: "thisArg", type: "any", description: "Value to use as this" }
-          ]
-        },
-        {
-          name: "reduce(callback, initialValue?)",
-          description: "Reduces array to single value (left to right)",
-          parameters: [
-            { name: "callback", type: "function", description: "Reducer function" },
-            { name: "initialValue", type: "any", description: "Initial value" }
-          ]
-        },
-        {
-          name: "reduceRight(callback, initialValue?)",
-          description: "Reduces array to single value (right to left)",
-          parameters: [
-            { name: "callback", type: "function", description: "Reducer function" },
-            { name: "initialValue", type: "any", description: "Initial value" }
-          ]
-        },
-        {
-          name: "reverse()",
-          description: "Reverses array in place",
-          parameters: []
-        },
-        {
-          name: "set(array, offset?)",
-          description: "Sets multiple values from an array",
-          parameters: [
-            { name: "array", type: "Array|TypedArray", description: "Source array" },
-            { name: "offset", type: "number", description: "Index to start setting values at" }
-          ]
-        },
-        {
-          name: "slice(start?, end?)",
-          description: "Returns shallow copy of portion of array",
-          parameters: [
-            { name: "start", type: "number", description: "Start index" },
-            { name: "end", type: "number", description: "End index (exclusive)" }
-          ]
-        },
-        {
-          name: "some(callback, thisArg?)",
-          description: "Tests if at least one element passes the test",
-          parameters: [
-            { name: "callback", type: "function", description: "Test function" },
-            { name: "thisArg", type: "any", description: "Value to use as this" }
-          ]
-        },
-        {
-          name: "sort(compareFn?)",
-          description: "Sorts elements in place",
-          parameters: [
-            { name: "compareFn", type: "function", description: "Function that defines sort order" }
-          ]
-        },
-        {
-          name: "subarray(begin, end?)",
-          description: "Returns new Uint8ClampedArray view of same ArrayBuffer",
-          parameters: [
-            { name: "begin", type: "number", description: "Start index" },
-            { name: "end", type: "number", description: "End index (exclusive)" }
-          ]
-        },
-        {
-          name: "toLocaleString(locales?, options?)",
-          description: "Returns localized string representation",
-          parameters: [
-            { name: "locales", type: "string|string[]", description: "Locale identifiers" },
-            { name: "options", type: "object", description: "Formatting options" }
-          ]
-        },
-        {
-          name: "toReversed()",
-          description: "Returns new array with elements in reverse order",
-          parameters: []
-        },
-        {
-          name: "toSorted(compareFn?)",
-          description: "Returns new sorted array",
-          parameters: [
-            { name: "compareFn", type: "function", description: "Function that defines sort order" }
-          ]
-        },
-        {
-          name: "toString()",
-          description: "Returns string representation of array",
-          parameters: []
-        },
-        {
-          name: "values()",
-          description: "Returns iterator of array values",
-          parameters: []
-        },
-        {
-          name: "with(index, value)",
-          description: "Returns new array with element at index replaced",
-          parameters: [
-            { name: "index", type: "number", description: "Index of element to replace" },
-            { name: "value", type: "number", description: "New value" }
-          ]
-        }
-      ]}
-      notes={[
-        "Uint8ClampedArray represents 8-bit unsigned integers with values CLAMPED to 0-255 range",
-        "Unlike other TypedArrays, values are clamped (not wrapped) when outside the valid range",
-        "Values above 255 become 255, values below 0 become 0",
-        "Fractional values are rounded using banker's rounding (round half to even)",
-        "Each element takes exactly 1 byte of memory",
-        "Specifically designed for Canvas ImageData and pixel manipulation",
-        "The standard TypedArray for RGBA color values in web graphics",
-        "All standard Array methods are available with TypedArray-specific optimizations",
-        "Automatic clamping makes it ideal for image processing operations",
-        "Perfect for computer vision, image filters, and graphics programming applications"
       ]}
     />
   );

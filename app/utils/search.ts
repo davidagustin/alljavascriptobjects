@@ -1,4 +1,4 @@
-import { OBJECT_CATEGORIES, getAllObjects, getObjectCategory } from '../constants/objects'
+import { getAllObjects, getObjectCategory as getCategoryForObject } from '../constants/objects'
 
 export interface SearchResult {
   objectName: string
@@ -49,7 +49,7 @@ export function searchObjects(
     }
     // Check if query matches category
     else {
-      const category = getObjectCategory(objectName)
+      const category = getCategoryForObject(objectName)
       if (category && category.name.toLowerCase().includes(queryLower)) {
         score = 40
         matchType = 'category'
@@ -61,12 +61,12 @@ export function searchObjects(
     if (visitedObjects.includes(objectName)) score += 5
     
     if (score > 0) {
-      const categoryData = getObjectCategory(objectName)
+      const categoryData = getCategoryForObject(objectName)
       results.push({
         objectName,
         score,
         matchType,
-        category: categoryData ? categoryData.name : undefined
+        category: categoryData?.name
       })
     }
   })

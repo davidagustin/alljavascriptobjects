@@ -591,7 +591,7 @@ const ObjectPage: FC<ObjectPageProps> = ({
                       {/* Line Numbers */}
                       {showLineNumbers && (
                         <div className="absolute left-2 top-4 text-xs text-gray-400 font-mono pointer-events-none select-none">
-                          {code.split('\n').map((_, index) => (
+                          {(code || '').split('\n').map((_, index) => (
                             <div key={index} style={{ lineHeight: 1.5 }}>
                               {index + 1}
                             </div>

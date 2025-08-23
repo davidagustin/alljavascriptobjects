@@ -54,13 +54,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     return () => mediaQuery.removeEventListener('change', handleChange)
   }, [theme])
 
-  if (!mounted) {
-    return <div className="light">{children}</div>
-  }
-
+  // Always provide context, but use default values during SSR
   return (
     <ThemeContext.Provider value={{ theme, setTheme }}>
-      {children}
+      <div className={!mounted ? "light" : undefined}>
+        {children}
+      </div>
     </ThemeContext.Provider>
   )
 }
@@ -68,6 +67,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 export function useTheme() {
   const context = useContext(ThemeContext)
   if (context === undefined) {
+    // During SSR or if not wrapped in ThemeProvider, return default values
+    if (typeof window === 'undefined') {
+      return { theme: 'system' as Theme, setTheme: () => {} }
+    }
     throw new Error('useTheme must be used within a ThemeProvider')
   }
   return context

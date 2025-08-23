@@ -102,6 +102,32 @@ class PerformanceTracker {
 // Global performance tracker instance - only on client side
 const performanceTracker = typeof window !== 'undefined' ? new PerformanceTracker() : null
 
+// Export performanceMonitor for backward compatibility
+export const performanceMonitor = {
+  trackEvent: (type: string, target: string, metadata?: Record<string, any>) => {
+    if (performanceTracker) {
+      performanceTracker.trackEvent(type, target, metadata)
+    }
+  },
+  getMetrics: () => {
+    return performanceTracker ? performanceTracker.getMetrics() : {
+      pageLoadTime: 0,
+      interactionCount: 0,
+      sessionDuration: 0,
+      objectsViewed: [],
+      searchQueries: []
+    }
+  },
+  exportData: () => {
+    return performanceTracker ? performanceTracker.exportData() : '{}'
+  },
+  clear: () => {
+    if (performanceTracker) {
+      performanceTracker.clear()
+    }
+  }
+}
+
 export function usePerformanceTracking() {
   const trackInteraction = (type: string, target: string, metadata?: Record<string, any>) => {
     if (performanceTracker) {
@@ -243,7 +269,7 @@ export async function measureAsyncFunctionExecution<T>(
 
 // Memory usage tracking
 export function trackMemoryUsage(): void {
-  if ('memory' in performance) {
+  if (performanceTracker && 'memory' in performance) {
     const memory = (performance as any).memory
     performanceTracker.trackEvent('memory_usage', 'system', {
       usedJSHeapSize: memory.usedJSHeapSize,
