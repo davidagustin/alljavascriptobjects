@@ -13,6 +13,7 @@ import VisualizationHub from './VisualizationHub'
 import { useApp } from '../contexts/AppContext'
 import { usePerformanceTracking } from '../utils/performance'
 import { isFeatureEnabled } from '../config/app'
+import { getAllObjects } from '../constants/objects'
 
 interface TabbedInterfaceProps {
   selectedObject: string
@@ -32,6 +33,9 @@ export default function TabbedInterface({ selectedObject, onSelectObject }: Tabb
   const [activeTab, setActiveTab] = useState('examples')
   const { favorites, visitedObjects, totalObjects } = useApp()
   const { trackInteraction } = usePerformanceTracking()
+  
+  // Get all objects for components that need them
+  const allObjects = useMemo(() => getAllObjects(), [])
 
   const tabs: Tab[] = useMemo(() => {
     const baseTabs = [
@@ -119,7 +123,7 @@ export default function TabbedInterface({ selectedObject, onSelectObject }: Tabb
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
       {/* Tab Navigation */}
       <div className="border-b border-gray-200 dark:border-gray-700">
-        <nav className="flex space-x-8 px-6" aria-label="Tabs">
+        <nav className="flex overflow-x-auto scrollbar-hide space-x-4 sm:space-x-8 px-4 sm:px-6" aria-label="Tabs">
           {tabs.map((tab) => {
             const Icon = tab.icon
             const isActive = activeTab === tab.id
@@ -131,7 +135,7 @@ export default function TabbedInterface({ selectedObject, onSelectObject }: Tabb
                 onClick={() => !isDisabled && handleTabChange(tab.id)}
                 disabled={isDisabled}
                 className={`
-                  flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors
+                  flex items-center space-x-1 sm:space-x-2 py-3 sm:py-4 px-2 sm:px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors whitespace-nowrap
                   ${isActive
                     ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600'
@@ -143,8 +147,9 @@ export default function TabbedInterface({ selectedObject, onSelectObject }: Tabb
                 `}
                 aria-current={isActive ? 'page' : undefined}
               >
-                <Icon className="h-4 w-4" />
-                <span>{tab.label}</span>
+                <Icon className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">{tab.label}</span>
+                <span className="sm:hidden">{tab.label.slice(0, 4)}</span>
                 {tab.badge && (
                   <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
                     {tab.badge}
@@ -157,12 +162,21 @@ export default function TabbedInterface({ selectedObject, onSelectObject }: Tabb
       </div>
 
       {/* Tab Content */}
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         {ActiveComponent ? (
-          <ActiveComponent 
-            selectedObject={selectedObject}
-            onSelectObject={onSelectObject}
-          />
+          // Pass different props based on the component
+          activeTab === 'study' ? (
+            <StudyMode 
+              selectedObject={selectedObject}
+              onObjectSelect={onSelectObject}
+              objects={allObjects}
+            />
+          ) : (
+            <ActiveComponent 
+              selectedObject={selectedObject}
+              onSelectObject={onSelectObject}
+            />
+          )
         ) : (
           <div className="text-center py-8 text-gray-500 dark:text-gray-400">
             <BookOpen className="h-12 w-12 mx-auto mb-4 text-gray-300" />

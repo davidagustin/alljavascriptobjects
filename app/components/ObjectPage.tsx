@@ -31,7 +31,7 @@ import { usePerformanceTracking } from '../utils/performance'
 import { PERFORMANCE } from '../utils/constants'
 import type { 
   CodeExample, 
-  Difficulty, 
+  DifficultyLevel, 
   BaseComponentProps,
   InteractiveComponentProps
 } from '../types'
@@ -58,7 +58,7 @@ export interface ObjectPageProps extends BaseComponentProps {
   readonly useCases: readonly string[]
   readonly browserSupport?: string
   readonly relatedObjects?: readonly string[]
-  readonly complexity?: Difficulty
+  readonly complexity?: DifficultyLevel
   readonly examples?: readonly CodeExample[]
 }
 

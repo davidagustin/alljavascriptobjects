@@ -459,22 +459,22 @@ export default function LearningPath() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
+    <div className="max-w-7xl mx-auto p-4 sm:p-6">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
           Learning Paths
         </h1>
-        <p className="text-gray-600 dark:text-gray-400">
+        <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
           Structured learning journeys to master JavaScript objects and concepts
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
         {/* Path Selection Sidebar */}
-        <div className="lg:col-span-1">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+        <div className="lg:col-span-1 order-2 lg:order-1">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
               Choose Your Path
             </h2>
             
@@ -487,27 +487,27 @@ export default function LearningPath() {
                   <button
                     key={path.id}
                     onClick={() => setSelectedPath(path.id)}
-                    className={`w-full text-left p-4 rounded-lg border transition-all ${
+                    className={`w-full text-left p-3 sm:p-4 rounded-lg border transition-all ${
                       selectedPath === path.id
                         ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
                         : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-medium text-gray-900 dark:text-gray-100">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2">
+                      <h3 className="font-medium text-gray-900 dark:text-gray-100 text-sm sm:text-base mb-1 sm:mb-0">
                         {path.title}
                       </h3>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(path.level)}`}>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium self-start sm:self-auto ${getDifficultyColor(path.level)}`}>
                         {path.level}
                       </span>
                     </div>
                     
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-3">
                       {path.description}
                     </p>
                     
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center justify-between text-xs sm:text-sm">
                         <span className="text-gray-500 dark:text-gray-400">Progress</span>
                         <span className="font-medium text-gray-900 dark:text-gray-100">
                           {completedModules}/{path.totalModules}

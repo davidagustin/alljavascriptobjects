@@ -117,11 +117,13 @@ export default function StudyMode({ onObjectSelect, objects }: StudyModeProps) {
   }
 
   const getProgress = () => {
-    if (targetObjects.length === 0) return 0
+    if (!targetObjects || targetObjects.length === 0) return 0
     return (studiedObjects.length / targetObjects.length) * 100
   }
 
   const getStudyStreak = () => {
+    if (!sessions || sessions.length === 0) return 0
+    
     const today = new Date().toDateString()
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toDateString()
     
@@ -177,7 +179,7 @@ export default function StudyMode({ onObjectSelect, objects }: StudyModeProps) {
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               size={5}
             >
-              {objects.map(obj => (
+              {(objects || []).map(obj => (
                 <option key={obj} value={obj}>
                   {obj}
                 </option>
@@ -241,7 +243,7 @@ export default function StudyMode({ onObjectSelect, objects }: StudyModeProps) {
                 Target Objects
               </h4>
               <div className="space-y-1">
-                {targetObjects.map(obj => (
+                {(targetObjects || []).map(obj => (
                   <button
                     key={obj}
                     onClick={() => {
@@ -308,7 +310,7 @@ export default function StudyMode({ onObjectSelect, objects }: StudyModeProps) {
                 No study sessions yet
               </p>
             ) : (
-              sessions.slice(0, 5).map(session => (
+              (sessions || []).slice(0, 5).map(session => (
                 <div
                   key={session.id}
                   className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"

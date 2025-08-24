@@ -1,28 +1,43 @@
 'use client'
 
-import { useState, useCallback, useMemo, useEffect } from 'react'
-import TabbedInterface from './components/TabbedInterface'
-import ThemeToggle from './components/ThemeToggle'
-import FavoriteButton from './components/FavoriteButton'
-import ProgressBar from './components/ProgressBar'
-import KeyboardShortcuts from './components/KeyboardShortcuts'
-import QuickLinks from './components/QuickLinks'
-import LearningStats from './components/LearningStats'
-import PWAInstallButton from './components/PWAInstallButton'
-import StudyMode from './components/StudyMode'
-import Notifications, { NotificationProvider, useNotifications } from './components/Notifications'
-import AnalyticsDashboard from './components/AnalyticsDashboard'
+import { useState, useCallback, useMemo, useEffect, lazy, Suspense } from 'react'
 import { BookOpen, Code, Search, Star, TrendingUp, Clock } from 'lucide-react'
+import ThemeToggle from './components/ThemeToggle'
+import Notifications, { NotificationProvider, useNotifications } from './components/Notifications'
+
+// Lazy load heavy components for better performance
+const TabbedInterface = lazy(() => import('./components/TabbedInterface'))
+const FavoriteButton = lazy(() => import('./components/FavoriteButton'))
+const ProgressBar = lazy(() => import('./components/ProgressBar'))
+const KeyboardShortcuts = lazy(() => import('./components/KeyboardShortcuts'))
+const QuickLinks = lazy(() => import('./components/QuickLinks'))
+const LearningStats = lazy(() => import('./components/LearningStats'))
+const PWAInstallButton = lazy(() => import('./components/PWAInstallButton'))
+const StudyMode = lazy(() => import('./components/StudyMode'))
+const AnalyticsDashboard = lazy(() => import('./components/AnalyticsDashboard'))
 import { useApp } from './contexts/AppContext'
 import { OBJECT_CATEGORIES, getAllObjects } from './constants/objects'
 import { searchObjects, filterObjects } from './utils/search'
 import { usePerformanceTracking } from './utils/performance'
+
+// Loading fallback components
+const ComponentFallback = ({ className = "" }: { className?: string }) => (
+  <div className={`animate-pulse bg-gray-200 dark:bg-gray-700 rounded-lg p-4 ${className}`}>
+    <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-3/4 mb-3"></div>
+    <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-1/2"></div>
+  </div>
+)
+
+const ButtonFallback = () => (
+  <div className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded w-8 h-8"></div>
+)
 
 function HomeContent() {
   const [selectedObject, setSelectedObject] = useState<string>('Object')
   const [searchTerm, setSearchTerm] = useState<string>('')
   const [filterType, setFilterType] = useState<'all' | 'favorites' | 'visited'>('all')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   
   const { favorites, isObjectVisited, markAsVisited, visitedObjects } = useApp()
   const { notifications, markAsRead, clearAll } = useNotifications()
@@ -106,21 +121,26 @@ function HomeContent() {
       <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-3">
-              <BookOpen className="h-8 w-8 text-blue-600 dark:text-blue-400" />
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                JavaScript Objects Tutorial
+            <div className="flex items-center space-x-2 sm:space-x-3">
+              <BookOpen className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 dark:text-blue-400" />
+              <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
+                <span className="hidden sm:inline">JavaScript Objects Tutorial</span>
+                <span className="sm:hidden">JS Objects</span>
               </h1>
             </div>
-            <div className="flex items-center space-x-4">
-              <PWAInstallButton showPromoBanner={true} />
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              <div className="hidden sm:block">
+                <Suspense fallback={<ButtonFallback />}>
+                  <PWAInstallButton showPromoBanner={true} />
+                </Suspense>
+              </div>
               <Notifications 
                 notifications={notifications} 
                 onMarkAsRead={markAsRead} 
                 onClearAll={clearAll} 
               />
               <ThemeToggle />
-              <span className="text-sm text-gray-500 dark:text-gray-400">
+              <span className="hidden sm:inline text-sm text-gray-500 dark:text-gray-400">
                 {objects.length} Objects
               </span>
             </div>
@@ -128,22 +148,62 @@ function HomeContent() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+        {/* Mobile Search Bar */}
+        <div className="lg:hidden mb-4">
+          <div className="relative mb-3">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
+            <input
+              type="text"
+              placeholder="Search objects..."
+              value={searchTerm}
+              onChange={handleSearchChange}
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
+            />
+          </div>
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="w-full flex items-center justify-between px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm"
+          >
+            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+              Filters & Navigation
+            </span>
+            <div className="flex items-center">
+              <span className="text-xs text-gray-500 dark:text-gray-400 mr-2">
+                {sidebarOpen ? 'Hide' : 'Show'}
+              </span>
+              <div className={`transform transition-transform ${sidebarOpen ? 'rotate-180' : ''}`}>
+                ▼
+              </div>
+            </div>
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8">
           {/* Sidebar - Object Navigation */}
-          <div className="lg:col-span-1 space-y-6">
+          <div className={`lg:col-span-1 space-y-4 lg:space-y-6 order-2 lg:order-1 ${
+            !sidebarOpen ? 'hidden lg:block' : ''
+          }`}>
             {/* Quick Links */}
-            <QuickLinks />
+            <Suspense fallback={<ComponentFallback />}>
+              <QuickLinks />
+            </Suspense>
             
             {/* Study Mode */}
-            <StudyMode onObjectSelect={handleObjectSelect} objects={objects} />
+            <Suspense fallback={<ComponentFallback />}>
+              <StudyMode onObjectSelect={handleObjectSelect} objects={objects} />
+            </Suspense>
             
             {/* Learning Stats */}
-            <LearningStats />
+            <Suspense fallback={<ComponentFallback />}>
+              <LearningStats />
+            </Suspense>
             
             {/* Progress Section */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <ProgressBar />
+              <Suspense fallback={<ComponentFallback className="h-20" />}>
+                <ProgressBar />
+              </Suspense>
             </div>
 
             {/* Navigation Section */}
@@ -223,13 +283,13 @@ function HomeContent() {
                 </button>
               </div>
               
-              <div className="space-y-2 max-h-96 overflow-y-auto">
+              <div className="space-y-2 max-h-80 sm:max-h-96 overflow-y-auto">
                 {filteredObjects.length > 0 ? (
                   filteredObjects.map((obj) => (
                     <div key={obj} className="flex items-center group">
                       <button
                         onClick={() => handleObjectSelect(obj)}
-                        className={`flex-1 text-left px-3 py-2 rounded-md text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 dark:focus:ring-offset-gray-800 ${
+                        className={`flex-1 text-left px-2 sm:px-3 py-2 rounded-md text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 dark:focus:ring-offset-gray-800 ${
                           selectedObject === obj
                             ? 'bg-blue-100 text-blue-700 font-medium dark:bg-blue-900 dark:text-blue-300'
                             : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
@@ -245,10 +305,12 @@ function HomeContent() {
                           </div>
                         </div>
                       </button>
-                      <FavoriteButton 
-                        objectName={obj} 
-                        className="opacity-0 group-hover:opacity-100 transition-opacity ml-1" 
-                      />
+                      <Suspense fallback={<ButtonFallback />}>
+                        <FavoriteButton 
+                          objectName={obj} 
+                          className="opacity-0 group-hover:opacity-100 transition-opacity ml-1" 
+                        />
+                      </Suspense>
                     </div>
                   ))
                 ) : (
@@ -274,24 +336,32 @@ function HomeContent() {
           </div>
 
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-8">
+          <div className="lg:col-span-2 space-y-4 lg:space-y-8 order-1 lg:order-2">
             {/* Tabbed Interface */}
-            <TabbedInterface 
-              selectedObject={selectedObject} 
-              onSelectObject={handleObjectSelect} 
-            />
+            <Suspense fallback={<ComponentFallback className="h-96" />}>
+              <TabbedInterface 
+                selectedObject={selectedObject} 
+                onSelectObject={handleObjectSelect} 
+              />
+            </Suspense>
           </div>
         </div>
       </div>
 
       {/* Keyboard Shortcuts */}
-      <KeyboardShortcuts />
+      <Suspense fallback={null}>
+        <KeyboardShortcuts />
+      </Suspense>
 
       {/* Analytics Dashboard */}
-      <AnalyticsDashboard />
+      <Suspense fallback={<ComponentFallback className="h-64" />}>
+        <AnalyticsDashboard />
+      </Suspense>
 
       {/* PWA Install Banner */}
-      <PWAInstallButton />
+      <Suspense fallback={null}>
+        <PWAInstallButton />
+      </Suspense>
       
     </div>
   )

@@ -63,7 +63,11 @@ arr[3] = 128.2; // Will be rounded to 128
 console.log(arr[3]); // 128`
         },
         {
+          id: "canvas-imagedata",
           title: "Canvas ImageData and Pixel Manipulation",
+          description: "Shows how Uint8ClampedArray is used in Canvas ImageData for pixel manipulation and common image processing operations",
+          difficulty: "advanced",
+          tags: ["canvas", "imagedata", "pixels", "image-processing"],
           code: `// Uint8ClampedArray is the standard for Canvas ImageData
 class CanvasImageProcessor {
   constructor(width, height) {
@@ -169,7 +173,11 @@ const inverted = processor.invertColors();
 console.log("Inverted red pixel:", inverted.getPixel(0, 0));`
         },
         {
+          id: "image-filters",
           title: "Advanced Image Processing Filters",
+          description: "Implements advanced image processing filters like sepia, blur, edge detection, and contrast adjustment using automatic clamping",
+          difficulty: "advanced",
+          tags: ["image-processing", "filters", "sepia", "blur", "edge-detection"],
           code: `// Advanced image processing filters with automatic clamping
 class ImageFilter {
   static applySepia(imageData) {
