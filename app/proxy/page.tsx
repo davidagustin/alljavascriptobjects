@@ -410,7 +410,8 @@ const virtualProps = new Proxy({
   },
   set(target, prop, value) {
     if (prop === 'fullName') {
-      const [first, last] = value.split(' ');
+      const parts = typeof value === 'string' ? value.split(' ') : [];
+      const [first = '', last = ''] = parts;
       target.firstName = first;
       target.lastName = last;
       return true;

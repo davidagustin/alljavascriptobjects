@@ -280,22 +280,22 @@ What would you like to learn about ${selectedObject}?`
 
   return (
     <div className={`flex flex-col h-full ${className}`}>
-      <div className="flex items-center p-4 border-b border-gray-200 dark:border-gray-700">
+      <div className="flex items-center p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
-            <Bot className="h-4 w-4 text-white" />
+          <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
+            <Bot className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">AI Assistant</h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Specialized in {selectedObject}</p>
+            <h3 className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-gray-100">AI Assistant</h3>
+            <p className="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">Specialized in {selectedObject}</p>
           </div>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3 sm:space-y-4">
         {messages.map((message) => (
           <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[80%] rounded-lg p-3 group ${
+            <div className={`max-w-[85%] sm:max-w-[80%] rounded-lg p-2 sm:p-3 group ${
               message.type === 'user'
                 ? 'bg-blue-600 text-white ml-4'
                 : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 mr-4'

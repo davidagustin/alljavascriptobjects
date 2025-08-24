@@ -17,14 +17,21 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setMounted(true)
-    const savedTheme = localStorage.getItem('theme') as Theme
-    if (savedTheme) {
-      setTheme(savedTheme)
+    // Only access localStorage on client side
+    if (typeof window !== 'undefined') {
+      try {
+        const savedTheme = localStorage.getItem('theme') as Theme
+        if (savedTheme) {
+          setTheme(savedTheme)
+        }
+      } catch (error) {
+        console.warn('Failed to load theme from localStorage:', error)
+      }
     }
   }, [])
 
   useEffect(() => {
-    if (!mounted) return
+    if (!mounted || typeof window === 'undefined') return
 
     const root = document.documentElement
     root.classList.remove('light', 'dark')
@@ -36,12 +43,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       root.classList.add(theme)
     }
 
-    localStorage.setItem('theme', theme)
+    try {
+      localStorage.setItem('theme', theme)
+    } catch (error) {
+      console.warn('Failed to save theme to localStorage:', error)
+    }
   }, [theme, mounted])
 
   // Listen for system theme changes
   useEffect(() => {
-    if (theme !== 'system') return
+    if (theme !== 'system' || typeof window === 'undefined') return
 
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
     const handleChange = () => {

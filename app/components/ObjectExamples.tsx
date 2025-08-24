@@ -1495,14 +1495,14 @@ console.log('This is a placeholder example for ${objectName}');
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-      <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-        <div className="flex items-center justify-between">
+      <div className="border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-3 sm:py-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center">
-              <Code2 className="h-6 w-6 mr-2 text-blue-500" />
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center">
+              <Code2 className="h-5 w-5 sm:h-6 sm:w-6 mr-2 text-blue-500" />
               {selectedObject}
             </h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{objectData.description}</p>
+            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">{objectData.description}</p>
           </div>
           <div className="flex items-center space-x-3">
             <a
@@ -1519,7 +1519,7 @@ console.log('This is a placeholder example for ${objectName}');
         </div>
       </div>
       
-      <div className="p-6 space-y-6">
+      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
         {objectData.examples.map((example, index) => (
           <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
             <div className="bg-gray-50 dark:bg-gray-700 px-4 py-2 border-b border-gray-200 dark:border-gray-600 flex items-center justify-between">

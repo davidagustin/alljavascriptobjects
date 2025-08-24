@@ -303,7 +303,7 @@ export default function CodeRunner({ selectedObject }: CodeRunnerProps) {
               ref={textareaRef}
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              className="w-full h-64 p-4 font-mono text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 resize-none"
+              className="w-full h-48 sm:h-64 lg:h-80 p-3 sm:p-4 font-mono text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 resize-none"
               placeholder="// Start coding here..."
               spellCheck={false}
             />

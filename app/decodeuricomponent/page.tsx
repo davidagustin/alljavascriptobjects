@@ -52,7 +52,7 @@ function decodeQueryString(queryString) {
   // Remove leading '?' if present
   const cleanQuery = queryString.startsWith('?') ? queryString.slice(1) : queryString;
   
-  const pairs = cleanQuery.split('&');
+  const pairs = cleanQuery ? cleanQuery.split('&') : [];
   
   for (const pair of pairs) {
     const [key, value] = pair.split('=');
@@ -116,7 +116,7 @@ class URIComponentDecoder {
     if (!queryString) return params;
     
     const cleanQuery = queryString.startsWith('?') ? queryString.slice(1) : queryString;
-    const pairs = cleanQuery.split('&');
+    const pairs = cleanQuery ? cleanQuery.split('&') : [];
     
     for (const pair of pairs) {
       const [key, value] = pair.split('=');

@@ -20,10 +20,34 @@ export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   }
 
   const exportData = () => {
+    if (typeof window === 'undefined') return
+    
+    let favorites = []
+    let visited = []
+    let theme = 'system'
+    
+    try {
+      favorites = JSON.parse(localStorage.getItem('jsObjectsFavorites') || '[]')
+    } catch (error) {
+      console.warn('Failed to parse favorites:', error)
+    }
+    
+    try {
+      visited = JSON.parse(localStorage.getItem('jsObjectsVisited') || '[]')
+    } catch (error) {
+      console.warn('Failed to parse visited:', error)
+    }
+    
+    try {
+      theme = localStorage.getItem('theme') || 'system'
+    } catch (error) {
+      console.warn('Failed to get theme:', error)
+    }
+    
     const data = {
-      favorites: JSON.parse(localStorage.getItem('jsObjectsFavorites') || '[]'),
-      visited: JSON.parse(localStorage.getItem('jsObjectsVisited') || '[]'),
-      theme: localStorage.getItem('theme') || 'system',
+      favorites,
+      visited,
+      theme,
       exportDate: new Date().toISOString()
     }
     
@@ -40,29 +64,41 @@ export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
 
   const importData = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
-    if (!file) return
+    if (!file || typeof window === 'undefined') return
 
     const reader = new FileReader()
     reader.onload = (e) => {
       try {
-        const data = JSON.parse(e.target?.result as string)
+        const result = e.target?.result
+        if (typeof result !== 'string') {
+          throw new Error('Invalid file content')
+        }
         
-        if (data.favorites) {
+        const data = JSON.parse(result)
+        
+        if (data.favorites && Array.isArray(data.favorites)) {
           localStorage.setItem('jsObjectsFavorites', JSON.stringify(data.favorites))
         }
-        if (data.visited) {
+        if (data.visited && Array.isArray(data.visited)) {
           localStorage.setItem('jsObjectsVisited', JSON.stringify(data.visited))
         }
-        if (data.theme) {
+        if (data.theme && typeof data.theme === 'string') {
           localStorage.setItem('theme', data.theme)
         }
         
         // Reload the page to apply changes
         window.location.reload()
-      } catch {
-        alert('Invalid data file')
+      } catch (error) {
+        console.error('Failed to import data:', error)
+        alert('Invalid data file. Please check the file format.')
       }
     }
+    
+    reader.onerror = () => {
+      console.error('Failed to read file')
+      alert('Failed to read the file.')
+    }
+    
     reader.readAsText(file)
   }
 
@@ -70,7 +106,7 @@ export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-[95vw] sm:max-w-md w-full max-h-[85vh] sm:max-h-[80vh] overflow-hidden">
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
             <Settings className="h-5 w-5 mr-2" />

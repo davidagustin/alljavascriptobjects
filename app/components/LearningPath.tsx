@@ -292,6 +292,7 @@ export default function LearningPath() {
   const [selectedPath, setSelectedPath] = useState<string>('fundamentals')
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set())
   const [userProgress, setUserProgress] = useState<Record<string, any>>({})
+  const [showPathSelector, setShowPathSelector] = useState(false)
 
 
   // Load progress from localStorage
@@ -470,13 +471,43 @@ export default function LearningPath() {
         </p>
       </div>
 
+      {/* Mobile Path Selector */}
+      <div className="lg:hidden mb-4">
+        <button
+          onClick={() => setShowPathSelector(!showPathSelector)}
+          className="w-full flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm"
+        >
+          <div className="flex items-center space-x-3">
+            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+              Current Path: {currentPath?.title || 'Select Path'}
+            </span>
+          </div>
+          <div className="flex items-center">
+            <span className="text-xs text-gray-500 dark:text-gray-400 mr-2">
+              {showPathSelector ? 'Hide' : 'Change'}
+            </span>
+            <div className={`transform transition-transform ${showPathSelector ? 'rotate-180' : ''}`}>
+              ▼
+            </div>
+          </div>
+        </button>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8">
         {/* Path Selection Sidebar */}
-        <div className="lg:col-span-1 order-2 lg:order-1">
+        <div className={`lg:col-span-1 order-2 lg:order-1 ${!showPathSelector ? 'hidden lg:block' : ''}`}>
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
-            <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-              Choose Your Path
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Choose Your Path
+              </h2>
+              <button 
+                onClick={() => setShowPathSelector(false)}
+                className="lg:hidden text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                ✕
+              </button>
+            </div>
             
             <div className="space-y-3">
               {pathsWithProgress.map(path => {
@@ -486,7 +517,10 @@ export default function LearningPath() {
                 return (
                   <button
                     key={path.id}
-                    onClick={() => setSelectedPath(path.id)}
+                    onClick={() => {
+                      setSelectedPath(path.id)
+                      setShowPathSelector(false) // Close mobile selector on selection
+                    }}
                     className={`w-full text-left p-3 sm:p-4 rounded-lg border transition-all ${
                       selectedPath === path.id
                         ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
@@ -534,24 +568,24 @@ export default function LearningPath() {
         </div>
 
         {/* Main Content */}
-        <div className="lg:col-span-3">
+        <div className="lg:col-span-3 order-1 lg:order-2">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
             {/* Path Header */}
-            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+            <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between">
+                <div className="mb-4 sm:mb-0 sm:flex-1">
+                  <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
                     {currentPath.title}
                   </h2>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-4">
                     {currentPath.description}
                   </p>
                   
-                  <div className="flex flex-wrap gap-2 mb-4">
+                  <div className="flex flex-wrap gap-1 sm:gap-2 mb-4">
                     {currentPath.skills.map(skill => (
                       <span
                         key={skill}
-                        className="px-3 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 rounded-full text-sm"
+                        className="px-2 sm:px-3 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 rounded-full text-xs sm:text-sm"
                       >
                         {skill}
                       </span>
@@ -559,41 +593,41 @@ export default function LearningPath() {
                   </div>
                 </div>
                 
-                <div className="text-right">
-                  <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                <div className="text-center sm:text-right sm:ml-4">
+                  <div className="text-2xl sm:text-3xl font-bold text-blue-600 dark:text-blue-400">
                     {Math.round(pathProgress.percentage)}%
                   </div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                  <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
                     Complete
                   </div>
                 </div>
               </div>
 
               {/* Progress Stats */}
-              <div className="grid grid-cols-3 gap-4 mt-6">
-                <div className="text-center p-3 bg-gray-50 dark:bg-gray-750 rounded-lg">
-                  <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              <div className="grid grid-cols-3 gap-2 sm:gap-4 mt-4 sm:mt-6">
+                <div className="text-center p-2 sm:p-3 bg-gray-50 dark:bg-gray-750 rounded-lg">
+                  <div className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
                     {pathProgress.completedModules}
                   </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                  <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                     Modules Complete
                   </div>
                 </div>
                 
-                <div className="text-center p-3 bg-gray-50 dark:bg-gray-750 rounded-lg">
-                  <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                <div className="text-center p-2 sm:p-3 bg-gray-50 dark:bg-gray-750 rounded-lg">
+                  <div className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
                     {Math.round(pathProgress.completedTime / 60)}h
                   </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                  <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                     Time Invested
                   </div>
                 </div>
                 
-                <div className="text-center p-3 bg-gray-50 dark:bg-gray-750 rounded-lg">
-                  <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                <div className="text-center p-2 sm:p-3 bg-gray-50 dark:bg-gray-750 rounded-lg">
+                  <div className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
                     {currentPath.modules.filter(m => m.isUnlocked).length}
                   </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                  <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                     Modules Unlocked
                   </div>
                 </div>
@@ -601,8 +635,8 @@ export default function LearningPath() {
             </div>
 
             {/* Modules List */}
-            <div className="p-6">
-              <div className="space-y-4">
+            <div className="p-4 sm:p-6">
+              <div className="space-y-3 sm:space-y-4">
                 {currentPath.modules.map((module, index) => {
                   const isExpanded = expandedModules.has(module.id)
                   const completedExercises = module.exercises.filter((e: any) => e.isCompleted).length
@@ -617,50 +651,52 @@ export default function LearningPath() {
                       }`}
                     >
                       <div
-                        className={`p-4 cursor-pointer ${
+                        className={`p-3 sm:p-4 cursor-pointer ${
                           module.isUnlocked ? 'hover:bg-gray-50 dark:hover:bg-gray-750' : ''
                         }`}
                         onClick={() => module.isUnlocked && toggleModule(module.id)}
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                          <div className="flex items-start space-x-3 mb-2 sm:mb-0 flex-1">
                             <div className="flex-shrink-0">
                               {module.isCompleted ? (
-                                <CheckCircle className="h-6 w-6 text-green-500" />
+                                <CheckCircle className="h-5 w-5 sm:h-6 sm:w-6 text-green-500" />
                               ) : module.isUnlocked ? (
-                                <Circle className="h-6 w-6 text-gray-400" />
+                                <Circle className="h-5 w-5 sm:h-6 sm:w-6 text-gray-400" />
                               ) : (
-                                <Lock className="h-6 w-6 text-gray-300" />
+                                <Lock className="h-5 w-5 sm:h-6 sm:w-6 text-gray-300" />
                               )}
                             </div>
                             
-                            <div>
-                              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-gray-100">
                                 {index + 1}. {module.title}
                               </h3>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">
+                              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
                                 {module.description}
                               </p>
                             </div>
                           </div>
                           
-                          <div className="flex items-center space-x-3">
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(module.difficulty)}`}>
-                              {module.difficulty}
-                            </span>
-                            
-                            <div className="text-right">
-                              <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                {module.estimatedTime}min
-                              </div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400">
-                                {module.objects.length} objects
+                          <div className="flex items-center justify-between sm:justify-end space-x-2 sm:space-x-3 sm:ml-4">
+                            <div className="flex items-center space-x-2">
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(module.difficulty)}`}>
+                                {module.difficulty}
+                              </span>
+                              
+                              <div className="text-right">
+                                <div className="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100">
+                                  {module.estimatedTime}min
+                                </div>
+                                <div className="text-xs text-gray-500 dark:text-gray-400">
+                                  {module.objects.length} objects
+                                </div>
                               </div>
                             </div>
                             
                             {module.isUnlocked && (
                               <ChevronRight
-                                className={`h-5 w-5 text-gray-400 transition-transform ${
+                                className={`h-4 w-4 sm:h-5 sm:w-5 text-gray-400 transition-transform flex-shrink-0 ${
                                   isExpanded ? 'rotate-90' : ''
                                 }`}
                               />
@@ -690,28 +726,28 @@ export default function LearningPath() {
 
                       {/* Expanded Module Content */}
                       {isExpanded && module.isUnlocked && (
-                        <div className="border-t border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-750">
+                        <div className="border-t border-gray-200 dark:border-gray-700 p-3 sm:p-4 bg-gray-50 dark:bg-gray-750">
                           {/* Objectives */}
-                          <div className="mb-6">
-                            <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
+                          <div className="mb-4 sm:mb-6">
+                            <h4 className="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
                               Learning Objectives
                             </h4>
                             <ul className="space-y-1">
                               {module.objectives.map((objective: string, idx: number) => (
-                                <li key={idx} className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                                  <Target className="h-3 w-3 mr-2 text-blue-500" />
-                                  {objective}
+                                <li key={idx} className="flex items-start text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                                  <Target className="h-3 w-3 mr-2 mt-0.5 text-blue-500 flex-shrink-0" />
+                                  <span>{objective}</span>
                                 </li>
                               ))}
                             </ul>
                           </div>
 
                           {/* JavaScript Objects */}
-                          <div className="mb-6">
-                            <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
+                          <div className="mb-4 sm:mb-6">
+                            <h4 className="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
                               JavaScript Objects Covered
                             </h4>
-                            <div className="flex flex-wrap gap-2">
+                            <div className="flex flex-wrap gap-1 sm:gap-2">
                               {module.objects.map((objectName: string) => (
                                 <span
                                   key={objectName}
@@ -728,48 +764,52 @@ export default function LearningPath() {
                           </div>
 
                           {/* Exercises */}
-                          <div className="mb-6">
-                            <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
+                          <div className="mb-4 sm:mb-6">
+                            <h4 className="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
                               Exercises ({completedExercises}/{module.exercises.length})
                             </h4>
                             <div className="space-y-2">
                               {module.exercises.map((exercise: any) => (
                                 <div
                                   key={exercise.id}
-                                  className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700"
+                                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 space-y-2 sm:space-y-0"
                                 >
-                                  <div className="flex items-center space-x-3">
+                                  <div className="flex items-start space-x-3 flex-1">
                                     <div className="flex-shrink-0">
                                       {exercise.isCompleted ? (
-                                        <CheckCircle className="h-5 w-5 text-green-500" />
+                                        <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
                                       ) : (
-                                        getExerciseIcon(exercise.type)
+                                        <div className="text-gray-400">
+                                          {getExerciseIcon(exercise.type)}
+                                        </div>
                                       )}
                                     </div>
                                     
-                                    <div>
-                                      <h5 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                    <div className="flex-1 min-w-0">
+                                      <h5 className="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100">
                                         {exercise.title}
                                       </h5>
-                                      <p className="text-xs text-gray-600 dark:text-gray-400">
+                                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
                                         {exercise.description}
                                       </p>
                                     </div>
                                   </div>
                                   
-                                  <div className="flex items-center space-x-2">
-                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(exercise.difficulty)}`}>
-                                      {exercise.difficulty}
-                                    </span>
-                                    
-                                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                                      {exercise.estimatedTime}min
+                                  <div className="flex items-center justify-between sm:justify-end space-x-2 sm:ml-3">
+                                    <div className="flex items-center space-x-2">
+                                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(exercise.difficulty)}`}>
+                                        {exercise.difficulty}
+                                      </span>
+                                      
+                                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                                        {exercise.estimatedTime}min
+                                      </div>
                                     </div>
                                     
                                     {!exercise.isCompleted && (
                                       <button
                                         onClick={() => completeExercise(currentPath.id, module.id, exercise.id)}
-                                        className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
+                                        className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors flex-shrink-0"
                                       >
                                         Start
                                       </button>
@@ -781,10 +821,10 @@ export default function LearningPath() {
                           </div>
 
                           {/* Module Actions */}
-                          <div className="flex items-center justify-between">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
                             <button
                               onClick={() => startModule(module)}
-                              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                              className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
                             >
                               <Play className="h-4 w-4 mr-2" />
                               {module.isCompleted ? 'Review Module' : 'Start Learning'}
@@ -793,7 +833,7 @@ export default function LearningPath() {
                             {!module.isCompleted && completedExercises === module.exercises.length && (
                               <button
                                 onClick={() => completeModule(currentPath.id, module.id)}
-                                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
                               >
                                 Mark Complete
                               </button>
@@ -809,19 +849,19 @@ export default function LearningPath() {
 
             {/* Certificate Section */}
             {pathProgress.percentage === 100 && currentPath.certificate && (
-              <div className="border-t border-gray-200 dark:border-gray-700 p-6 bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20">
-                <div className="flex items-center justify-between">
+              <div className="border-t border-gray-200 dark:border-gray-700 p-4 sm:p-6 bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
                   <div>
-                    <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">
+                    <h3 className="text-base sm:text-lg font-medium text-gray-900 dark:text-gray-100 mb-1">
                       🎉 Congratulations!
                     </h3>
-                    <p className="text-gray-600 dark:text-gray-400">
+                    <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
                       You've completed the {currentPath.title} learning path
                     </p>
                   </div>
                   
-                  <button className="flex items-center px-6 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors">
-                    <Award className="h-5 w-5 mr-2" />
+                  <button className="flex items-center justify-center px-4 sm:px-6 py-2 sm:py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm sm:text-base">
+                    <Award className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                     Download Certificate
                   </button>
                 </div>

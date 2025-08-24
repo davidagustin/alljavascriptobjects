@@ -286,7 +286,7 @@ export default function Quiz({ onComplete }: QuizProps) {
                 You'll have 30 seconds per question.
               </p>
               
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-purple-600">{questions.length}</div>
                   <div className="text-sm text-gray-600 dark:text-gray-400">Questions</div>
@@ -341,7 +341,7 @@ export default function Quiz({ onComplete }: QuizProps) {
                 {scoreInfo.message}
               </p>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
                 <div className="bg-white dark:bg-gray-700 rounded-lg p-4">
                   <div className="text-2xl font-bold text-green-600">{score}</div>
                   <div className="text-sm text-gray-600 dark:text-gray-400">Correct</div>

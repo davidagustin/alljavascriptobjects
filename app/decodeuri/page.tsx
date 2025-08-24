@@ -75,10 +75,12 @@ function decodeQueryParams(queryString) {
   // Remove leading '?' if present
   const cleanQuery = queryString.startsWith('?') ? queryString.slice(1) : queryString;
   
-  const pairs = cleanQuery.split('&');
+  const pairs = cleanQuery ? cleanQuery.split('&') : [];
   
   for (const pair of pairs) {
-    const [key, value] = pair.split('=');
+    if (!pair) continue;
+    const parts = pair.split('=');
+    const [key, value] = parts;
     if (key) {
       const decodedKey = decodeURIComponent(key);
       const decodedValue = value ? decodeURIComponent(value) : '';

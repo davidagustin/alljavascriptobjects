@@ -7,6 +7,7 @@ import Notifications, { NotificationProvider, useNotifications } from './compone
 
 // Lazy load heavy components for better performance
 const TabbedInterface = lazy(() => import('./components/TabbedInterface'))
+const NavigationEnhanced = lazy(() => import('./components/NavigationEnhanced'))
 const FavoriteButton = lazy(() => import('./components/FavoriteButton'))
 const ProgressBar = lazy(() => import('./components/ProgressBar'))
 const KeyboardShortcuts = lazy(() => import('./components/KeyboardShortcuts'))
@@ -86,12 +87,16 @@ function HomeContent() {
 
   // Keyboard shortcuts
   useEffect(() => {
+    if (typeof window === 'undefined') return
+    
     const handleKeyDown = (e: KeyboardEvent) => {
       // Focus search with Ctrl/Cmd + K
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault()
         const searchInput = document.getElementById('search-input')
-        searchInput?.focus()
+        if (searchInput instanceof HTMLElement) {
+          searchInput.focus()
+        }
       }
     }
 
@@ -207,35 +212,35 @@ function HomeContent() {
             </div>
 
             {/* Navigation Section */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 flex items-center">
+            <div className="bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 p-4 lg:p-6">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
                 <Code className="h-5 w-5 mr-2" />
                 JavaScript Objects
               </h2>
               
               {/* Search */}
-              <div className="relative mb-4">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-500" />
+              <div className="relative mb-3">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-gray-400" />
                 <input
                   id="search-input"
                   type="text"
                   placeholder="Search objects..."
                   value={searchTerm}
                   onChange={handleSearchChange}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                   aria-label="Search JavaScript objects"
                 />
               </div>
 
               {/* Category Selector */}
-              <div className="mb-4">
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <div className="mb-3">
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-200 mb-1">
                   Category
                 </label>
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 text-sm"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm"
                 >
                   <option value="all">All Categories</option>
                   {Object.keys(objectCategories).map(category => (
@@ -247,13 +252,13 @@ function HomeContent() {
               </div>
 
               {/* Filter Buttons */}
-              <div className="flex items-center space-x-1 mb-4">
+              <div className="flex items-center space-x-1 mb-3">
                 <button
                   onClick={() => setFilterType('all')}
                   className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
                     filterType === 'all'
-                      ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
-                      : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100'
+                      ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200'
+                      : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white'
                   }`}
                 >
                   <TrendingUp className="h-3 w-3 mr-1 inline" />
@@ -263,8 +268,8 @@ function HomeContent() {
                   onClick={() => setFilterType('favorites')}
                   className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
                     filterType === 'favorites'
-                      ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
-                      : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100'
+                      ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200'
+                      : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white'
                   }`}
                 >
                   <Star className="h-3 w-3 mr-1 inline" />
@@ -274,8 +279,8 @@ function HomeContent() {
                   onClick={() => setFilterType('visited')}
                   className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
                     filterType === 'visited'
-                      ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
-                      : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100'
+                      ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200'
+                      : 'text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white'
                   }`}
                 >
                   <Clock className="h-3 w-3 mr-1 inline" />
@@ -283,16 +288,16 @@ function HomeContent() {
                 </button>
               </div>
               
-              <div className="space-y-2 max-h-80 sm:max-h-96 overflow-y-auto">
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-1 max-h-[500px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
                 {filteredObjects.length > 0 ? (
                   filteredObjects.map((obj) => (
                     <div key={obj} className="flex items-center group">
                       <button
                         onClick={() => handleObjectSelect(obj)}
-                        className={`flex-1 text-left px-2 sm:px-3 py-2 rounded-md text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 dark:focus:ring-offset-gray-800 ${
+                        className={`flex-1 text-left px-2 py-1.5 rounded text-sm transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 dark:focus:ring-offset-gray-900 ${
                           selectedObject === obj
-                            ? 'bg-blue-100 text-blue-700 font-medium dark:bg-blue-900 dark:text-blue-300'
-                            : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                            ? 'bg-blue-500 text-white font-medium shadow-sm dark:bg-blue-600'
+                            : 'text-gray-700 hover:bg-gray-100 dark:text-gray-100 dark:hover:bg-gray-800 dark:hover:text-white'
                         }`}
                         aria-label={`Select ${obj} object`}
                       >
