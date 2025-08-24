@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { BarChart3, TrendingUp, Clock, Target, Trophy, Activity, Download, RefreshCw } from 'lucide-react'
 import { usePerformanceTracking } from '../utils/performance'
 import { useApp } from '../contexts/AppContext'
-import { getAllObjects, getObjectsByDifficulty } from '../constants/objects'
+import { getAllObjects, getObjectsByDifficulty, getObjectCategory } from '../constants/objects'
 
 interface AnalyticsData {
   totalObjects: number
@@ -48,18 +48,18 @@ export default function AnalyticsDashboard() {
     const difficultyProgress: Record<string, { total: number; visited: number; percentage: number }> = {}
     
     difficulties.forEach(difficulty => {
-      const objectsInDifficulty = getObjectsByDifficulty(difficulty)
+      const objectsInDifficulty = getObjectsByDifficulty(difficulty) || []
       const visitedInDifficulty = objectsInDifficulty.filter(obj => visitedObjects.includes(obj))
       
       difficultyProgress[difficulty] = {
         total: objectsInDifficulty.length,
         visited: visitedInDifficulty.length,
-        percentage: Math.round((visitedInDifficulty.length / objectsInDifficulty.length) * 100)
+        percentage: objectsInDifficulty.length > 0 ? Math.round((visitedInDifficulty.length / objectsInDifficulty.length) * 100) : 0
       }
     })
     
     // Generate recent activity from performance metrics
-    const recentActivity = metrics.objectsViewed.slice(-10).map(obj => ({
+    const recentActivity = (metrics.objectsViewed || []).slice(-10).map(obj => ({
       type: 'view',
       object: obj,
       timestamp: Date.now() - Math.random() * 86400000 // Random time in last 24 hours
@@ -70,8 +70,8 @@ export default function AnalyticsDashboard() {
       visitedObjects: visitedObjects.length,
       favoriteObjects: favorites.length,
       sessionDuration: metrics.sessionDuration,
-      searchQueries: metrics.searchQueries.length,
-      objectsViewed: metrics.objectsViewed,
+      searchQueries: (metrics.searchQueries || []).length,
+      objectsViewed: metrics.objectsViewed || [],
       topCategories,
       difficultyProgress,
       recentActivity
@@ -374,27 +374,3 @@ export default function AnalyticsDashboard() {
   )
 }
 
-function getObjectCategory(objectName: string): { name: string } | null {
-  const categories = {
-    'Fundamental': ['Object', 'Function', 'Boolean', 'Symbol', 'undefined', 'globalThis'],
-    'Numbers & Math': ['Number', 'BigInt', 'Math', 'NaN', 'Infinity', 'isFinite()', 'isNaN()', 'parseFloat()', 'parseInt()'],
-    'Text': ['String', 'RegExp', 'encodeURI()', 'decodeURI()', 'encodeURIComponent()', 'decodeURIComponent()', 'escape()', 'unescape()'],
-    'Collections': ['Array', 'Map', 'Set', 'WeakMap', 'WeakSet', 'WeakRef'],
-    'Typed Arrays': ['ArrayBuffer', 'SharedArrayBuffer', 'DataView', 'TypedArray', 'Int8Array', 'Uint8Array', 'Uint8ClampedArray', 'Int16Array', 'Uint16Array', 'Int32Array', 'Uint32Array', 'Float32Array', 'Float64Array', 'BigInt64Array', 'BigUint64Array', 'Float16Array'],
-    'Errors': ['Error', 'AggregateError', 'EvalError', 'RangeError', 'ReferenceError', 'SyntaxError', 'TypeError', 'URIError', 'InternalError', 'SuppressedError'],
-    'Control Flow': ['Promise', 'AsyncFunction', 'Generator', 'GeneratorFunction', 'AsyncGenerator', 'AsyncGeneratorFunction', 'Iterator', 'AsyncIterator'],
-    'Memory Management': ['FinalizationRegistry', 'DisposableStack', 'AsyncDisposableStack'],
-    'Meta Programming': ['Proxy', 'Reflect'],
-    'Internationalization': ['Intl', 'Date', 'Temporal'],
-    'Data Processing': ['JSON', 'Atomics'],
-    'Global Functions': ['eval()']
-  }
-  
-  for (const [name, objects] of Object.entries(categories)) {
-    if (objects.includes(objectName)) {
-      return { name }
-    }
-  }
-  
-  return null
-}

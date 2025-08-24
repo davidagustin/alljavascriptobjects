@@ -45,6 +45,8 @@ export default function StudyMode({ onObjectSelect, objects }: StudyModeProps) {
   }, [isActive, session])
 
   const loadSessions = () => {
+    if (typeof window === 'undefined') return
+    
     const saved = localStorage.getItem('study-sessions')
     if (saved) {
       try {
@@ -56,7 +58,9 @@ export default function StudyMode({ onObjectSelect, objects }: StudyModeProps) {
   }
 
   const saveSessions = (newSessions: StudySession[]) => {
-    localStorage.setItem('study-sessions', JSON.stringify(newSessions))
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('study-sessions', JSON.stringify(newSessions))
+    }
     setSessions(newSessions)
   }
 

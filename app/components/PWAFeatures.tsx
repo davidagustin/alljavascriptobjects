@@ -71,14 +71,14 @@ export default function PWAFeatures() {
       name: 'Background Sync',
       description: 'Sync data when connection is restored',
       icon: Sync,
-      status: 'background-sync' in (window as any) ? 'available' : 'unsupported',
+      status: typeof window !== 'undefined' && 'background-sync' in (window as any) ? 'available' : 'unsupported',
       details: 'Automatically sync changes when back online'
     },
     {
       name: 'Push Notifications',
       description: 'Receive updates and reminders',
       icon: Bell,
-      status: 'Notification' in window ? 'available' : 'unsupported',
+      status: typeof window !== 'undefined' && 'Notification' in window ? 'available' : 'unsupported',
       details: 'Get notified about new features and learning reminders'
     },
     {
@@ -92,13 +92,15 @@ export default function PWAFeatures() {
       name: 'Data Persistence',
       description: 'Save your progress and preferences locally',
       icon: Database,
-      status: 'indexedDB' in window ? 'available' : 'unsupported',
+      status: typeof window !== 'undefined' && 'indexedDB' in window ? 'available' : 'unsupported',
       details: 'Your data is stored securely on your device'
     }
   ], [cacheStatus.serviceWorkerStatus])
 
   // Monitor online/offline status
   useEffect(() => {
+    if (typeof window === 'undefined') return
+    
     const updateOnlineStatus = () => {
       setCacheStatus(prev => ({ ...prev, isOnline: navigator.onLine }))
     }
@@ -117,7 +119,7 @@ export default function PWAFeatures() {
 
   // Monitor service worker status
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       navigator.serviceWorker.ready.then(registration => {
         setCacheStatus(prev => ({ ...prev, serviceWorkerStatus: 'active' }))
         
@@ -145,8 +147,20 @@ export default function PWAFeatures() {
       // Mock loading offline data from IndexedDB
       const mockOfflineData: OfflineData = {
         objects: ['Array', 'Object', 'Promise', 'String', 'Number'],
-        favorites: JSON.parse(localStorage.getItem('favorites') || '[]'),
-        progress: JSON.parse(localStorage.getItem('visitedObjects') || '[]'),
+        favorites: (() => {
+          try {
+            return typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('favorites') || '[]') : []
+          } catch {
+            return []
+          }
+        })(),
+        progress: (() => {
+          try {
+            return typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('visitedObjects') || '[]') : []
+          } catch {
+            return []
+          }
+        })(),
         codeSnippets: [],
         lastUpdated: new Date()
       }
@@ -172,18 +186,28 @@ export default function PWAFeatures() {
       }
       
       if (dataToCache.favorites) {
-        dataToStore.favorites = JSON.parse(localStorage.getItem('favorites') || '[]')
+        try {
+          dataToStore.favorites = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('favorites') || '[]') : []
+        } catch {
+          dataToStore.favorites = []
+        }
       }
       
       if (dataToCache.progress) {
-        dataToStore.progress = JSON.parse(localStorage.getItem('visitedObjects') || '[]')
+        try {
+          dataToStore.progress = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('visitedObjects') || '[]') : []
+        } catch {
+          dataToStore.progress = []
+        }
       }
       
       // Simulate storing in IndexedDB
-      localStorage.setItem('offlineData', JSON.stringify({
-        ...dataToStore,
-        lastUpdated: new Date().toISOString()
-      }))
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('offlineData', JSON.stringify({
+          ...dataToStore,
+          lastUpdated: new Date().toISOString()
+        }))
+      }
       
       setCacheStatus(prev => ({
         ...prev,
@@ -200,7 +224,9 @@ export default function PWAFeatures() {
   // Clear cache
   const clearCache = useCallback(async () => {
     try {
-      localStorage.removeItem('offlineData')
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('offlineData')
+      }
       setOfflineData(null)
       setCacheStatus(prev => ({ 
         ...prev, 
@@ -214,7 +240,7 @@ export default function PWAFeatures() {
 
   // Request notification permission
   const requestNotificationPermission = useCallback(async () => {
-    if ('Notification' in window) {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
       const permission = await Notification.requestPermission()
       if (permission === 'granted') {
         setNotifications(prev => ({ ...prev, enabled: true }))

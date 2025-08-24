@@ -43,16 +43,20 @@ export default function CodeRunner({ selectedObject }: CodeRunnerProps) {
 
   // Auto-save code to localStorage
   useEffect(() => {
-    if (autoSave && code) {
+    if (typeof window !== 'undefined' && autoSave && code) {
       localStorage.setItem(`code-${selectedObject}`, code)
     }
   }, [code, selectedObject, autoSave])
 
   // Load saved code when object changes
   useEffect(() => {
-    const savedCode = localStorage.getItem(`code-${selectedObject}`)
-    if (savedCode) {
-      setCode(savedCode)
+    if (typeof window !== 'undefined') {
+      const savedCode = localStorage.getItem(`code-${selectedObject}`)
+      if (savedCode) {
+        setCode(savedCode)
+      } else {
+        setCode(`// ${selectedObject} examples\n// Start coding here...`)
+      }
     } else {
       setCode(`// ${selectedObject} examples\n// Start coding here...`)
     }

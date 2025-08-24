@@ -1,90 +1,148 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Keyboard, X, Command } from 'lucide-react'
-
-interface Shortcut {
-  key: string
-  description: string
-  modifier?: 'ctrl' | 'cmd'
-}
-
-const shortcuts: Shortcut[] = [
-  { key: 'K', description: 'Focus search', modifier: 'ctrl' },
-  { key: 'Escape', description: 'Clear search' },
-  { key: 'Enter', description: 'Run code' },
-  { key: 'S', description: 'Save code', modifier: 'ctrl' },
-  { key: 'R', description: 'Reset code', modifier: 'ctrl' },
-  { key: 'C', description: 'Copy code', modifier: 'ctrl' },
-]
+import { useEffect, useState } from 'react'
+import { Command } from 'lucide-react'
 
 export default function KeyboardShortcuts() {
-  const [isVisible, setIsVisible] = useState(false)
-  const [isMac, setIsMac] = useState(false)
-
-  useEffect(() => {
-    setIsMac(navigator.platform.toUpperCase().indexOf('MAC') >= 0)
-  }, [])
-
+  const [showHelp, setShowHelp] = useState(false)
+  const [lastKey, setLastKey] = useState('')
+  
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === '?' && (e.ctrlKey || e.metaKey)) {
+      // Show/hide help
+      if (e.key === '?' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault()
-        setIsVisible(!isVisible)
+        setShowHelp(prev => !prev)
+        return
       }
-      if (e.key === 'Escape' && isVisible) {
-        setIsVisible(false)
+      
+      // Global shortcuts
+      if (!e.metaKey && !e.ctrlKey) {
+        switch(e.key) {
+          case '/':
+            // Focus search if not already in an input
+            if (document.activeElement?.tagName !== 'INPUT') {
+              e.preventDefault()
+              const searchInput = document.querySelector('input[type="search"], input[placeholder*="Search"]') as HTMLInputElement
+              searchInput?.focus()
+            }
+            break
+          case 'g':
+            // Go to navigation
+            if (lastKey === 'g') {
+              e.preventDefault()
+              const nav = document.querySelector('[role="navigation"]') as HTMLElement
+              nav?.focus()
+              setLastKey('')
+            } else {
+              setLastKey('g')
+              setTimeout(() => setLastKey(''), 1000)
+            }
+            break
+          case 'h':
+            // Go home
+            if (lastKey === 'g') {
+              e.preventDefault()
+              const homeLink = document.querySelector('a[href="/"], button[aria-label*="Home"]') as HTMLElement
+              homeLink?.click()
+              setLastKey('')
+            }
+            break
+          case 'f':
+            // Toggle favorites
+            if (lastKey === 'g') {
+              e.preventDefault()
+              const favButton = document.querySelector('button[aria-label*="favorite"]') as HTMLElement
+              favButton?.click()
+              setLastKey('')
+            }
+            break
+        }
+      }
+      
+      // Navigation with arrow keys
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        const activeElement = document.activeElement
+        const navigationContainer = activeElement?.closest('[role="navigation"]')
+        
+        if (navigationContainer) {
+          e.preventDefault()
+          const buttons = Array.from(navigationContainer.querySelectorAll('button:not([disabled])'))
+          const currentIndex = buttons.indexOf(activeElement as HTMLButtonElement)
+          
+          let nextIndex
+          if (e.key === 'ArrowDown') {
+            nextIndex = currentIndex === -1 ? 0 : Math.min(currentIndex + 1, buttons.length - 1)
+          } else {
+            nextIndex = currentIndex === -1 ? buttons.length - 1 : Math.max(currentIndex - 1, 0)
+          }
+          
+          (buttons[nextIndex] as HTMLElement)?.focus()
+        }
       }
     }
-
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [isVisible])
-
-  if (!isVisible) return null
-
+    
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [lastKey])
+  
+  // Auto-hide help after 5 seconds
+  useEffect(() => {
+    if (showHelp) {
+      const timer = setTimeout(() => setShowHelp(false), 5000)
+      return () => clearTimeout(timer)
+    }
+  }, [showHelp])
+  
+  if (!showHelp) return null
+  
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-[95vw] sm:max-w-md lg:max-w-lg w-full max-h-[85vh] sm:max-h-[80vh] overflow-hidden">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
-            <Keyboard className="h-5 w-5 mr-2" />
-            Keyboard Shortcuts
-          </h2>
-          <button
-            onClick={() => setIsVisible(false)}
-            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-          >
-            <X className="h-5 w-5" />
-          </button>
+    <div className="fixed bottom-4 right-4 z-50 bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-4 max-w-sm animate-fade-in">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="font-semibold text-gray-900 dark:text-white">Keyboard Shortcuts</h3>
+        <button
+          onClick={() => setShowHelp(false)}
+          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          aria-label="Close help"
+        >
+          ×
+        </button>
+      </div>
+      
+      <div className="space-y-2 text-sm">
+        <div className="flex justify-between">
+          <span className="text-gray-600 dark:text-gray-400">Search</span>
+          <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs">/</kbd>
         </div>
-        
-        <div className="p-6 space-y-4 max-h-96 overflow-y-auto">
-          {shortcuts.map((shortcut) => (
-            <div key={shortcut.key} className="flex items-center justify-between">
-              <span className="text-sm text-gray-600 dark:text-gray-400">
-                {shortcut.description}
-              </span>
-              <div className="flex items-center space-x-1">
-                {shortcut.modifier && (
-                  <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-300 rounded dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600">
-                    {isMac ? <Command className="h-3 w-3" /> : 'Ctrl'}
-                  </kbd>
-                )}
-                <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-300 rounded dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600">
-                  {shortcut.key}
-                </kbd>
-              </div>
-            </div>
-          ))}
+        <div className="flex justify-between">
+          <span className="text-gray-600 dark:text-gray-400">Navigate</span>
+          <div className="space-x-1">
+            <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs">↑</kbd>
+            <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs">↓</kbd>
+          </div>
         </div>
-        
-        <div className="p-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
-          <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-            Press <kbd className="px-1 py-0.5 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-300 rounded dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600">
-              {isMac ? '⌘' : 'Ctrl'}+?
-            </kbd> to toggle this help
-          </p>
+        <div className="flex justify-between">
+          <span className="text-gray-600 dark:text-gray-400">Go to nav</span>
+          <div className="space-x-1">
+            <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs">g</kbd>
+            <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs">g</kbd>
+          </div>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-600 dark:text-gray-400">Go home</span>
+          <div className="space-x-1">
+            <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs">g</kbd>
+            <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs">h</kbd>
+          </div>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-600 dark:text-gray-400">Toggle help</span>
+          <div className="space-x-1">
+            <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs">
+              <Command className="inline h-3 w-3" />
+            </kbd>
+            <kbd className="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded text-xs">?</kbd>
+          </div>
         </div>
       </div>
     </div>

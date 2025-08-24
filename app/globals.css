@@ -33,9 +33,6 @@ body {
   * {
     @apply border-gray-200 dark:border-gray-700;
   }
-  body {
-    @apply bg-white text-gray-900 dark:bg-gray-900 dark:text-gray-100;
-  }
 }
 
 /* Custom scrollbar */
@@ -68,6 +65,40 @@ body {
 /* Focus styles */
 .focus-visible {
   @apply outline-none ring-2 ring-blue-500 ring-offset-2 dark:ring-offset-gray-900;
+}
+
+/* High contrast mode */
+.high-contrast {
+  filter: contrast(1.2);
+}
+
+.high-contrast * {
+  border-width: 2px !important;
+}
+
+.high-contrast button,
+.high-contrast a {
+  text-decoration: underline;
+}
+
+/* Reduced motion */
+.reduce-motion * {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+/* Screen reader only */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
 
 /* Animation classes */
